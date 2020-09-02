@@ -1,5 +1,8 @@
 [workspace]
 
 members = [
-  "clause"
+  "clause",
+  "clause_macro",
+  "clause_parser",
+  "test", # TODO remove me
 ]

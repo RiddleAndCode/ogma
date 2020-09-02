@@ -1,5 +1,5 @@
 [package]
-name = "clause"
+name = "clause-parser"
 version = "0.1.0"
 authors = ["Julian Popescu <jpopesculian@gmail.com>"]
 edition = "2018"
@@ -8,5 +8,4 @@ edition = "2018"
 default = []
 
 [dependencies]
-clause-macro = { path = "../clause_macro" }
-clause-parser = { path = "../clause_parser" }
+nl-parser = { git = "ssh://git@github.com/RiddleAndCode/nlsd.git" }

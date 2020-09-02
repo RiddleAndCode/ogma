@@ -1,12 +1,17 @@
 [package]
-name = "clause"
+name = "clause-macro"
 version = "0.1.0"
 authors = ["Julian Popescu <jpopesculian@gmail.com>"]
 edition = "2018"
+
+[lib]
+proc-macro = true
 
 [features]
 default = []
 
 [dependencies]
-clause-macro = { path = "../clause_macro" }
+quote = "1.0"
+proc-macro2 = "1.0"
+syn = { version = "1.0", features = ["full", "extra-traits"] }
 clause-parser = { path = "../clause_parser" }
