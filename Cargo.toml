@@ -4,5 +4,8 @@ members = [
   "clause",
   "clause/macro",
   "clause/parser",
-  "matcher"
+  "matcher",
+  "fn_macro",
+  "vm",
+  "test" # TODO remove me
 ]

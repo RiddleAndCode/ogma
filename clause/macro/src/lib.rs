@@ -11,12 +11,12 @@ use quote::ToTokens;
 use syn::parse::{Parse, ParseStream};
 use syn::{
     punctuated::Punctuated,
-    token::{Comma, Const, Eq, Pub, Semi},
-    Error, Ident, LitStr,
+    token::{Comma, Const, Eq, Semi},
+    Error, Ident, LitStr, Visibility,
 };
 
 struct ClauseArgs {
-    vis: Option<Pub>,
+    vis: Visibility,
     name: Ident,
     tokens: Punctuated<TokenOwned, Comma>,
 }
@@ -49,12 +49,7 @@ impl ToTokens for TokenOwned {
 
 impl Parse for ClauseArgs {
     fn parse(input: ParseStream) -> Result<Self, Error> {
-        let lookahead = input.lookahead1();
-        let vis = if lookahead.peek(Pub) {
-            Some(input.parse()?)
-        } else {
-            None
-        };
+        let vis = input.parse()?;
         let _ = input.parse::<Const>();
         let name = input.parse()?;
         let _ = input.parse::<Eq>()?;

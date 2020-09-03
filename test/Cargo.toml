@@ -1,0 +1,14 @@
+[package]
+name = "test"
+version = "0.1.0"
+authors = ["Julian Popescu <jpopesculian@gmail.com>"]
+edition = "2018"
+
+[features]
+default = []
+
+[dependencies]
+fn-macro = { path = "../fn_macro" }
+vm = { path = "../vm" }
+object-query = { git = "ssh://git@github.com/RiddleAndCode/nlsd.git" }
+
