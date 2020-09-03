@@ -9,9 +9,14 @@ use clause_parser::{parse, ParseError, Token};
 use proc_macro::TokenStream;
 use quote::ToTokens;
 use syn::parse::{Parse, ParseStream};
-use syn::{punctuated::Punctuated, token::Comma, Error, Ident, LitStr};
+use syn::{
+    punctuated::Punctuated,
+    token::{Comma, Const, Eq, Pub, Semi},
+    Error, Ident, LitStr,
+};
 
 struct ClauseArgs {
+    vis: Option<Pub>,
     name: Ident,
     tokens: Punctuated<TokenOwned, Comma>,
 }
@@ -44,8 +49,15 @@ impl ToTokens for TokenOwned {
 
 impl Parse for ClauseArgs {
     fn parse(input: ParseStream) -> Result<Self, Error> {
+        let lookahead = input.lookahead1();
+        let vis = if lookahead.peek(Pub) {
+            Some(input.parse()?)
+        } else {
+            None
+        };
+        let _ = input.parse::<Const>();
         let name = input.parse()?;
-        let _ = input.parse::<Comma>()?;
+        let _ = input.parse::<Eq>()?;
         let clause_lit_str = input.parse::<LitStr>()?;
         let clause_str = clause_lit_str.value();
         let tokens = parse(&clause_str)
@@ -54,16 +66,17 @@ impl Parse for ClauseArgs {
             .into_iter()
             .map(TokenOwned::from)
             .collect();
-        Ok(ClauseArgs { name, tokens })
+        let _ = input.parse::<Semi>();
+        Ok(ClauseArgs { vis, name, tokens })
     }
 }
 
 #[proc_macro]
 pub fn clause(args: TokenStream) -> TokenStream {
-    let ClauseArgs { name, tokens } = parse_macro_input!(args as ClauseArgs);
+    let ClauseArgs { vis, name, tokens } = parse_macro_input!(args as ClauseArgs);
     let len = tokens.len();
     let out = quote! {
-        const #name: [::clause::Token<'static>; #len] = [#tokens];
+        #vis const #name: [::clause::Token<'static>; #len] = [#tokens];
     };
     out.into()
 }

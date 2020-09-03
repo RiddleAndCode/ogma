@@ -8,5 +8,5 @@ edition = "2018"
 default = []
 
 [dependencies]
-clause-macro = { path = "../clause_macro" }
-clause-parser = { path = "../clause_parser" }
+clause-macro = { path = "./macro" }
+clause-parser = { path = "./parser" }

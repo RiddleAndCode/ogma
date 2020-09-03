@@ -2,7 +2,6 @@
 
 members = [
   "clause",
-  "clause_macro",
-  "clause_parser",
-  "test", # TODO remove me
+  "clause/macro",
+  "clause/parser",
 ]

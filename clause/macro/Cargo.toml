@@ -14,4 +14,4 @@ default = []
 quote = "1.0"
 proc-macro2 = "1.0"
 syn = { version = "1.0", features = ["full", "extra-traits"] }
-clause-parser = { path = "../clause_parser" }
+clause-parser = { path = "../parser" }
