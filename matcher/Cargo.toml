@@ -1,0 +1,18 @@
+[package]
+name = "matcher"
+version = "0.1.0"
+authors = ["Julian Popescu <jpopesculian@gmail.com>"]
+edition = "2018"
+
+[features]
+default = []
+
+[dependencies]
+serde = "1.0"
+nl-parser = { git = "ssh://git@github.com/RiddleAndCode/nlsd.git" }
+nlsd = { git = "ssh://git@github.com/RiddleAndCode/nlsd.git" }
+nloq = { git = "ssh://git@github.com/RiddleAndCode/nlsd.git" }
+object-query = { git = "ssh://git@github.com/RiddleAndCode/nlsd.git" }
+
+[dev-dependencies]
+clause = { path = "../clause" }

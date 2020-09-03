@@ -4,4 +4,5 @@ members = [
   "clause",
   "clause/macro",
   "clause/parser",
+  "matcher"
 ]

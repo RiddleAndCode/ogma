@@ -1,6 +1,6 @@
 use core::fmt;
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Token<'a> {
     Static(&'a str),
     QueryVar(&'a str),
@@ -11,6 +11,29 @@ pub enum Token<'a> {
 pub enum ParseError {
     InvalidVariableName,
     InvalidVariablePrefix,
+}
+
+impl<'a> Token<'a> {
+    pub fn is_static(&self) -> bool {
+        match self {
+            Self::Static(_) => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_query_var(&self) -> bool {
+        match self {
+            Self::QueryVar(_) => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_data_var(&self) -> bool {
+        match self {
+            Self::DataVar(_) => true,
+            _ => false,
+        }
+    }
 }
 
 fn parse_next(src: &str) -> Result<Option<(Token, &str)>, ParseError> {
