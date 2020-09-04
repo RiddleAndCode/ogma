@@ -8,7 +8,10 @@ use proc_macro2::Span;
 use quote::ToTokens;
 use syn::parse::{Parse, ParseStream};
 use syn::punctuated::Punctuated;
-use syn::{token, Attribute, Error, FnArg, Generics, Ident, ItemFn, LitStr, Pat, Visibility};
+use syn::{
+    token, Attribute, Error, FnArg, GenericParam, Generics, Ident, ItemFn, Lifetime, LifetimeDef,
+    LitStr, Pat, Visibility,
+};
 
 struct Descriptor {
     name: Ident,
@@ -21,19 +24,45 @@ impl Descriptor {
         self.name.clone()
     }
 
+    fn clause(&self) -> LitStr {
+        LitStr::new(&self.clause_str, self.clause_span)
+    }
+
     fn parse_clause(&self) -> Result<Vec<clause::Token>, Error> {
         clause::parse(&self.clause_str)
             .collect::<Result<Vec<clause::Token>, clause::ParseError>>()
             .map_err(|e| Error::new(self.clause_span, e))
     }
 
-    fn var_names(&self) -> Result<Vec<Ident>, Error> {
+    fn parse_var_names(&self) -> Result<Vec<Ident>, Error> {
         self.parse_clause()?
             .into_iter()
             .filter_map(|t| match t {
                 clause::Token::Static(_) => None,
                 clause::Token::QueryVar(s) => Some(s),
                 clause::Token::DataVar(s) => Some(s),
+            })
+            .map(|s| syn::parse_str::<Ident>(s))
+            .collect()
+    }
+
+    fn parse_query_var_names(&self) -> Result<Vec<Ident>, Error> {
+        self.parse_clause()?
+            .into_iter()
+            .filter_map(|t| match t {
+                clause::Token::QueryVar(s) => Some(s),
+                _ => None,
+            })
+            .map(|s| syn::parse_str::<Ident>(s))
+            .collect()
+    }
+
+    fn parse_data_var_names(&self) -> Result<Vec<Ident>, Error> {
+        self.parse_clause()?
+            .into_iter()
+            .filter_map(|t| match t {
+                clause::Token::DataVar(s) => Some(s),
+                _ => None,
             })
             .map(|s| syn::parse_str::<Ident>(s))
             .collect()
@@ -60,15 +89,8 @@ struct Func {
 }
 
 impl Func {
-    fn parse_generics(&self) -> Result<Generics, Error> {
-        let generics = self.inner.sig.generics.clone();
-        if generics.lifetimes().count() > 1 {
-            return Err(Error::new(
-                generics.lifetimes().nth(1).unwrap().lifetime.ident.span(),
-                "invalid multiple lifetimes",
-            ));
-        }
-        Ok(generics)
+    fn generics(&self) -> Generics {
+        self.inner.sig.generics.clone()
     }
 
     fn vis(&self) -> Visibility {
@@ -115,20 +137,14 @@ struct Struct {
 }
 
 impl Struct {
-    fn construct(desc: &Descriptor, func: &Func) -> Result<Self, Error> {
-        let possible_names = desc.var_names()?;
-        for var in func.parse_var_names()? {
-            if !possible_names.iter().any(|v1| v1 == &var) {
-                return Err(Error::new(var.span(), "variable not found in clause"));
-            }
-        }
-        Ok(Struct {
+    fn build(desc: &Descriptor, func: &Func) -> Self {
+        Struct {
             attrs: func.attrs(),
             name: desc.name(),
             vis: func.vis(),
-            generics: func.parse_generics()?,
+            generics: func.generics(),
             vars: func.vars(),
-        })
+        }
     }
 }
 
@@ -141,23 +157,199 @@ impl ToTokens for Struct {
         let vars = &self.vars;
         tokens.extend(quote! {
             #(#attrs)*
-            #vis struct #name#generics {
+            #vis struct #name #generics {
                 #vars
             }
         });
     }
 }
 
+struct ClauseImpl {
+    name: Ident,
+    generics: Generics,
+    clause: LitStr,
+}
+
+impl ClauseImpl {
+    fn build(desc: &Descriptor, func: &Func) -> Self {
+        Self {
+            name: desc.name(),
+            generics: func.generics(),
+            clause: desc.clause(),
+        }
+    }
+}
+
+impl ToTokens for ClauseImpl {
+    fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
+        let name = &self.name;
+        let generics = &self.generics;
+        let clause = &self.clause;
+        tokens.extend(quote! {
+            impl #generics #name #generics {
+                ::clause::clause! {
+                    const CLAUSE = #clause
+                }
+            }
+        });
+    }
+}
+
+struct MatchImpl {
+    name: Ident,
+    struct_generics: Generics,
+    impl_generics: Generics,
+    lifetime: Lifetime,
+    query_vars: Vec<Ident>,
+    data_vars: Vec<Ident>,
+}
+
+impl MatchImpl {
+    fn build(desc: &Descriptor, func: &Func) -> Result<Self, Error> {
+        let struct_generics = func.generics();
+        let (impl_generics, lifetime) = if struct_generics.lifetimes().count() < 1 {
+            let lifetime = Lifetime::new("'a", Span::call_site());
+            let param = GenericParam::Lifetime(LifetimeDef::new(lifetime.clone()));
+            let mut impl_generics = struct_generics.clone();
+            impl_generics.params.insert(0, param);
+            (impl_generics, lifetime)
+        } else {
+            let lifetime = struct_generics.lifetimes().next().unwrap().lifetime.clone();
+            (struct_generics.clone(), lifetime)
+        };
+        Ok(Self {
+            name: desc.name(),
+            lifetime,
+            struct_generics,
+            impl_generics,
+            query_vars: desc.parse_query_var_names()?,
+            data_vars: desc.parse_data_var_names()?,
+        })
+    }
+
+    fn match_generics(&self) -> Generics {
+        Generics {
+            lt_token: Some(token::Lt::default()),
+            params: std::iter::once(GenericParam::Lifetime(LifetimeDef::new(
+                self.lifetime.clone(),
+            )))
+            .collect(),
+            gt_token: Some(token::Gt::default()),
+            where_clause: None,
+        }
+    }
+}
+
+impl ToTokens for MatchImpl {
+    fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
+        let name = &self.name;
+        let struct_generics = &self.struct_generics;
+        let impl_generics = &self.impl_generics;
+        let match_generics = self.match_generics();
+        let lifetime = &self.lifetime;
+        let var_declarations = self
+            .query_vars
+            .iter()
+            .chain(self.data_vars.iter())
+            .map(|var| {
+                quote! { let mut #var = None; }
+            });
+        let var_assignments = self
+            .query_vars
+            .iter()
+            .chain(self.data_vars.iter())
+            .map(|var| {
+                quote! { #var: #var.ok_or(::matcher::MatchError::UnfilledVar)?, }
+            });
+        let query_var_matches = self.query_vars.iter().map(|var| {
+            let var_str = var.to_string();
+            quote! { #var_str => #var = Some(m.next_query()?), }
+        });
+        let data_var_matches = self.data_vars.iter().map(|var| {
+            let var_str = var.to_string();
+            quote! { #var_str => #var = Some(m.next_data()?), }
+        });
+        tokens.extend(quote! {
+            impl #impl_generics ::matcher::Match #match_generics for #name #struct_generics {
+                fn match_str(s: &#lifetime str) -> Result<Self, ::matcher::MatchError> {
+                    #(#var_declarations)*
+                    let mut m = ::matcher::Matcher::new(s);
+                    for token in &Self::CLAUSE {
+                        match *token {
+                            ::clause::Token::Static(token) => {
+                                if m.next_static()? != token {
+                                    return Err(::matcher::MatchError::MismatchedStaticToken);
+                                }
+                            },
+                            ::clause::Token::QueryVar(name) => match name {
+                                #(#query_var_matches)*
+                                _ => return Err(::matcher::MatchError::UnknownQueryVar),
+                            },
+                            ::clause::Token::DataVar(name) => match name {
+                                #(#data_var_matches)*
+                                _ => return Err(::matcher::MatchError::UnknownDataVar),
+                            },
+                        }
+                    }
+                    Ok(#name {
+                        #(#var_assignments)*
+                    })
+                }
+            }
+        });
+    }
+}
+
+fn check_var_names(desc: &Descriptor, func: &Func) -> Result<(), Error> {
+    let possible_names = desc.parse_var_names()?;
+    let func_names = func.parse_var_names()?;
+    if possible_names.len() != func_names.len() {
+        return Err(Error::new(desc.clause().span(), "variable number mismatch"));
+    }
+    for var in func.parse_var_names()? {
+        if !possible_names.iter().any(|v1| v1 == &var) {
+            return Err(Error::new(var.span(), "variable not found in clause"));
+        }
+    }
+    Ok(())
+}
+
+fn check_generics(func: &Func) -> Result<(), Error> {
+    let generics = func.generics();
+    if generics.lifetimes().count() > 1 {
+        return Err(Error::new(
+            generics.lifetimes().nth(1).unwrap().lifetime.ident.span(),
+            "invalid multiple lifetimes",
+        ));
+    }
+    Ok(())
+}
+
+fn validate(desc: &Descriptor, func: &Func) -> Result<(), Error> {
+    check_var_names(desc, func)?;
+    check_generics(func)?;
+    Ok(())
+}
+
 #[proc_macro_attribute]
 pub fn ogma_fn(desc: TokenStream, func: TokenStream) -> TokenStream {
     let desc = parse_macro_input!(desc as Descriptor);
     let func = parse_macro_input!(func as Func);
-    let st = match Struct::construct(&desc, &func) {
-        Ok(st) => st,
-        Err(err) => return err.to_compile_error().into(),
+    if let Err(err) = validate(&desc, &func) {
+        return err.to_compile_error().into();
+    }
+    let fn_struct = Struct::build(&desc, &func);
+    let clause_impl = ClauseImpl::build(&desc, &func);
+    let match_impl = match MatchImpl::build(&desc, &func) {
+        Ok(match_impl) => match_impl,
+        Err(err) => {
+            return err.to_compile_error().into();
+        }
     };
     let tokens = quote! {
-        #st
+        #fn_struct
+        #clause_impl
+        #match_impl
     };
     tokens.into()
 }
