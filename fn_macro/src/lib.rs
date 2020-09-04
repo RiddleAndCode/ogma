@@ -10,10 +10,11 @@ use syn::parse::{Parse, ParseStream};
 use syn::punctuated::Punctuated;
 use syn::{
     token, Attribute, Error, FnArg, GenericParam, Generics, Ident, ItemFn, Lifetime, LifetimeDef,
-    LitStr, Pat, Visibility,
+    LitStr, Pat, Type, Visibility,
 };
 
 struct Descriptor {
+    attrs: Vec<Attribute>,
     name: Ident,
     clause_span: Span,
     clause_str: String,
@@ -26,6 +27,10 @@ impl Descriptor {
 
     fn clause(&self) -> LitStr {
         LitStr::new(&self.clause_str, self.clause_span)
+    }
+
+    fn attrs(&self) -> Vec<Attribute> {
+        self.attrs.clone()
     }
 
     fn parse_clause(&self) -> Result<Vec<clause::Token>, Error> {
@@ -71,12 +76,14 @@ impl Descriptor {
 
 impl Parse for Descriptor {
     fn parse(input: ParseStream) -> Result<Self, Error> {
+        let attrs = Attribute::parse_outer(input)?;
         let name = input.parse()?;
         let _ = input.parse::<token::Comma>()?;
         let clause = input.parse::<LitStr>()?;
         let clause_span = clause.span();
         let clause_str = clause.value();
         Ok(Descriptor {
+            attrs,
             name,
             clause_span,
             clause_str,
@@ -88,6 +95,12 @@ struct Func {
     inner: ItemFn,
 }
 
+struct FuncVar {
+    name: Ident,
+    is_referenced: bool,
+    ty: Box<Type>,
+}
+
 impl Func {
     fn generics(&self) -> Generics {
         self.inner.sig.generics.clone()
@@ -97,25 +110,63 @@ impl Func {
         self.inner.vis.clone()
     }
 
-    fn attrs(&self) -> Vec<Attribute> {
-        self.inner.attrs.clone()
+    fn name(&self) -> Ident {
+        self.inner.sig.ident.clone()
+    }
+
+    fn inner(&self) -> ItemFn {
+        self.inner.clone()
     }
 
     fn vars(&self) -> Punctuated<FnArg, token::Comma> {
         self.inner.sig.inputs.clone().into_iter().skip(1).collect()
     }
 
+    fn lifetime(&self) -> Option<LifetimeDef> {
+        self.inner.sig.generics.lifetimes().next().cloned()
+    }
+
     fn parse_var_names(&self) -> Result<Vec<Ident>, Error> {
+        Ok(self.parse_vars()?.into_iter().map(|v| v.name).collect())
+    }
+
+    fn parse_vars(&self) -> Result<Vec<FuncVar>, Error> {
         self.vars()
             .iter()
             .map(|v| match v {
                 FnArg::Receiver(r) => {
                     return Err(Error::new(r.self_token.span, "invalid self"));
                 }
-                FnArg::Typed(t) => match t.pat.as_ref() {
-                    Pat::Ident(n) => Ok(n.ident.clone()),
-                    t => Err(Error::new_spanned(t, "invalid argument type")),
-                },
+                FnArg::Typed(t) => {
+                    let name = match t.pat.as_ref() {
+                        Pat::Ident(n) => n.ident.clone(),
+                        t => return Err(Error::new_spanned(t, "invalid argument type")),
+                    };
+                    let (is_referenced, ty) = match t.ty.as_ref() {
+                        Type::Reference(ty) => {
+                            if let Some(m) = ty.mutability {
+                                return Err(Error::new(m.span, "arguments cannot be mutable"));
+                            }
+                            if let Some(l) = ty.lifetime.clone() {
+                                if Some(l.clone()) != self.lifetime().map(|l| l.lifetime) {
+                                    return Err(Error::new(
+                                        l.ident.span(),
+                                        "mismatching lifetimes",
+                                    ));
+                                }
+                                (false, Box::new(Type::Reference(ty.clone())))
+                            } else {
+                                (true, ty.elem.clone())
+                            }
+                        }
+                        ty => (false, Box::new(ty.clone())),
+                    };
+                    Ok(FuncVar {
+                        name,
+                        is_referenced,
+                        ty,
+                    })
+                }
             })
             .collect()
     }
@@ -133,18 +184,18 @@ struct Struct {
     name: Ident,
     vis: Visibility,
     generics: Generics,
-    vars: Punctuated<FnArg, token::Comma>,
+    vars: Vec<FuncVar>,
 }
 
 impl Struct {
-    fn build(desc: &Descriptor, func: &Func) -> Self {
-        Struct {
-            attrs: func.attrs(),
+    fn build(desc: &Descriptor, func: &Func) -> Result<Self, Error> {
+        Ok(Struct {
+            attrs: desc.attrs(),
             name: desc.name(),
             vis: func.vis(),
             generics: func.generics(),
-            vars: func.vars(),
-        }
+            vars: func.parse_vars()?,
+        })
     }
 }
 
@@ -154,42 +205,54 @@ impl ToTokens for Struct {
         let vis = &self.vis;
         let name = &self.name;
         let generics = &self.generics;
-        let vars = &self.vars;
+        let vars = self.vars.iter().map(|var| {
+            let name = &var.name;
+            let ty = &var.ty;
+            quote! { #name: #ty, }
+        });
         tokens.extend(quote! {
             #(#attrs)*
             #vis struct #name #generics {
-                #vars
+                #(#vars)*
             }
         });
     }
 }
 
-struct ClauseImpl {
+struct StructImpl {
     name: Ident,
     generics: Generics,
     clause: LitStr,
+    func: ItemFn,
 }
 
-impl ClauseImpl {
+impl StructImpl {
     fn build(desc: &Descriptor, func: &Func) -> Self {
+        let mut generics = func.generics();
+        generics.lifetimes_mut().for_each(|mut l| {
+            l.lifetime = Lifetime::new(&format!("'_{}", l.lifetime.ident), Span::call_site());
+        });
         Self {
             name: desc.name(),
-            generics: func.generics(),
+            generics,
             clause: desc.clause(),
+            func: func.inner(),
         }
     }
 }
 
-impl ToTokens for ClauseImpl {
+impl ToTokens for StructImpl {
     fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
         let name = &self.name;
         let generics = &self.generics;
         let clause = &self.clause;
+        let func = &self.func;
         tokens.extend(quote! {
             impl #generics #name #generics {
                 ::clause::clause! {
                     const CLAUSE = #clause
                 }
+                #func
             }
         });
     }
@@ -226,18 +289,6 @@ impl MatchImpl {
             data_vars: desc.parse_data_var_names()?,
         })
     }
-
-    fn match_generics(&self) -> Generics {
-        Generics {
-            lt_token: Some(token::Lt::default()),
-            params: std::iter::once(GenericParam::Lifetime(LifetimeDef::new(
-                self.lifetime.clone(),
-            )))
-            .collect(),
-            gt_token: Some(token::Gt::default()),
-            where_clause: None,
-        }
-    }
 }
 
 impl ToTokens for MatchImpl {
@@ -245,7 +296,6 @@ impl ToTokens for MatchImpl {
         let name = &self.name;
         let struct_generics = &self.struct_generics;
         let impl_generics = &self.impl_generics;
-        let match_generics = self.match_generics();
         let lifetime = &self.lifetime;
         let var_declarations = self
             .query_vars
@@ -270,7 +320,7 @@ impl ToTokens for MatchImpl {
             quote! { #var_str => #var = Some(m.next_data()?), }
         });
         tokens.extend(quote! {
-            impl #impl_generics ::matcher::Match #match_generics for #name #struct_generics {
+            impl #impl_generics ::matcher::Match<#lifetime> for #name #struct_generics {
                 fn match_str(s: &#lifetime str) -> Result<Self, ::matcher::MatchError> {
                     #(#var_declarations)*
                     let mut m = ::matcher::Matcher::new(s);
@@ -297,6 +347,51 @@ impl ToTokens for MatchImpl {
                 }
             }
         });
+    }
+}
+
+struct CallableImpl {
+    name: Ident,
+    generics: Generics,
+    fn_name: Ident,
+    vars: Vec<FuncVar>,
+}
+
+impl CallableImpl {
+    fn build(desc: &Descriptor, func: &Func) -> Result<Self, Error> {
+        Ok(Self {
+            name: desc.name(),
+            generics: func.generics(),
+            fn_name: func.name(),
+            vars: func.parse_vars()?,
+        })
+    }
+}
+
+impl ToTokens for CallableImpl {
+    fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
+        let name = &self.name;
+        let generics = &self.generics;
+        let fn_name = &self.fn_name;
+        let fn_args = self.vars.iter().map(|var| {
+            let name = &var.name;
+            if var.is_referenced {
+                quote! { &self.#name, }
+            } else {
+                quote! { self.#name, }
+            }
+        });
+        tokens.extend(quote! {
+            impl #generics ::vm::Callable for #name #generics {
+                fn call(&self, ctx: &mut ::vm::Context) -> Result<(), ::vm::Trap> {
+                    Self::#fn_name(
+                        ctx,
+                        #(#fn_args)*
+                    )?;
+                    Ok(())
+                }
+            }
+        })
     }
 }
 
@@ -338,18 +433,30 @@ pub fn ogma_fn(desc: TokenStream, func: TokenStream) -> TokenStream {
     if let Err(err) = validate(&desc, &func) {
         return err.to_compile_error().into();
     }
-    let fn_struct = Struct::build(&desc, &func);
-    let clause_impl = ClauseImpl::build(&desc, &func);
+    let fn_struct = match Struct::build(&desc, &func) {
+        Ok(fn_struct) => fn_struct,
+        Err(err) => {
+            return err.to_compile_error().into();
+        }
+    };
+    let struct_impl = StructImpl::build(&desc, &func);
     let match_impl = match MatchImpl::build(&desc, &func) {
         Ok(match_impl) => match_impl,
         Err(err) => {
             return err.to_compile_error().into();
         }
     };
+    let callable_impl = match CallableImpl::build(&desc, &func) {
+        Ok(callable_impl) => callable_impl,
+        Err(err) => {
+            return err.to_compile_error().into();
+        }
+    };
     let tokens = quote! {
         #fn_struct
-        #clause_impl
+        #struct_impl
         #match_impl
+        #callable_impl
     };
     tokens.into()
 }

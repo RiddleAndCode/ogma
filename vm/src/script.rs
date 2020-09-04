@@ -4,7 +4,7 @@ use crate::trap::Trap;
 use alloc::boxed::Box;
 use alloc::vec::Vec;
 
-#[derive(Default, Debug)]
+#[derive(Default)]
 pub struct Script {
     funcs: Vec<Func>,
 }

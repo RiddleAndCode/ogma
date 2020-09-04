@@ -4,7 +4,7 @@ use alloc::boxed::Box;
 
 pub type Func = Box<dyn Callable>;
 
-pub trait Callable: core::fmt::Debug {
+pub trait Callable {
     fn call(&self, ctx: &mut Context) -> Result<(), Trap>;
 }
 
@@ -13,7 +13,6 @@ pub(crate) mod tests {
     use super::*;
     use alloc::string::ToString;
 
-    #[derive(Debug)]
     pub struct Add(pub &'static str, pub &'static str);
 
     impl Callable for Add {
