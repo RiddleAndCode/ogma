@@ -5,6 +5,7 @@
 
 extern crate alloc;
 
+pub mod bdd;
 pub mod clause;
 pub mod matcher;
 pub mod module;

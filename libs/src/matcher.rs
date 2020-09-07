@@ -10,6 +10,7 @@ pub enum MatchError {
     UnknownDataVar,
     UnfilledVar,
     UnexpectedEof,
+    InvalidCtx,
 }
 
 pub struct Matcher<'a> {
@@ -52,8 +53,8 @@ impl<'a> Matcher<'a> {
     }
 }
 
-pub trait Match<'a>: Sized {
-    fn match_str(string: &'a str) -> Result<Self, MatchError>;
+pub trait Match<'a, C>: Sized {
+    fn match_str(ctx: &mut C, string: &'a str) -> Result<Self, MatchError>;
 }
 
 impl From<nlsd::Error> for MatchError {

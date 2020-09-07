@@ -1,6 +1,7 @@
 #[macro_use]
 extern crate ogma;
 
+use ogma::bdd;
 use ogma::clause::Token;
 use ogma::matcher::*;
 use ogma::object_query::Query;
@@ -14,16 +15,26 @@ pub struct Add<'a> {
 
 impl<'a> Add<'a> {
     clause! {
-        const CLAUSE = "Given the addition of d`b` and d`a` henceforth q`out`"
+        const CLAUSE = "the addition of d`b` and d`a` henceforth q`out`"
     }
 }
 
-impl<'a, C> Match<'a, C> for Add<'a> {
-    fn match_str(_: &mut C, string: &'a str) -> Result<Self, MatchError> {
+impl<'a> Match<'a, bdd::Step> for Add<'a> {
+    fn match_str(ctx: &mut bdd::Step, string: &'a str) -> Result<Self, MatchError> {
         let mut a = None;
         let mut b = None;
         let mut out = None;
         let mut matcher = Matcher::new(string);
+        let token = match matcher.next_static()? {
+            "Given" => "Given",
+            "And" => "And",
+            _ => return Err(::ogma::matcher::MatchError::MismatchedStaticToken),
+        };
+        if let Some(next_state) = ctx.next(token) {
+            *ctx = next_state;
+        } else {
+            return Err(::ogma::matcher::MatchError::InvalidCtx);
+        }
         for token in &Self::CLAUSE {
             match *token {
                 Token::Static(token) => {
@@ -51,8 +62,8 @@ impl<'a, C> Match<'a, C> for Add<'a> {
 }
 
 #[test]
-fn add_match() -> Result<(), MatchError> {
-    let mut ctx = ();
+fn bdd_add_match() -> Result<(), MatchError> {
+    let mut ctx = bdd::Step::new();
     let add = Add::match_str(
         &mut ctx,
         "Given the addition of 4 and 3 henceforth the addition",
