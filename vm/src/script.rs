@@ -5,8 +5,8 @@ use alloc::boxed::Box;
 use alloc::vec::Vec;
 
 #[derive(Default)]
-pub struct Script {
-    funcs: Vec<Func>,
+pub struct Script<'a> {
+    funcs: Vec<Func<'a>>,
 }
 
 #[derive(Default)]
@@ -15,12 +15,12 @@ pub struct InstanceState {
     pc: usize,
 }
 
-pub struct Instance<'s> {
-    script: &'s Script,
+pub struct Instance<'s, 'a> {
+    script: &'s Script<'a>,
     state: InstanceState,
 }
 
-impl Script {
+impl<'a> Script<'a> {
     #[inline]
     pub fn new() -> Self {
         Self::default()
@@ -40,7 +40,7 @@ impl Script {
     }
 }
 
-impl<'a> Instance<'a> {
+impl<'s, 'a> Instance<'s, 'a> {
     #[inline]
     pub fn step(&mut self) -> Result<(), Trap> {
         self.cur_func()
@@ -78,7 +78,7 @@ impl<'a> Instance<'a> {
 
     #[allow(clippy::borrowed_box)]
     #[inline]
-    fn cur_func(&self) -> Option<&'a Box<dyn Callable>> {
+    fn cur_func(&self) -> Option<&'s Func<'a>> {
         self.script.funcs.get(self.state.pc())
     }
 }
@@ -110,8 +110,8 @@ impl InstanceState {
     }
 }
 
-impl From<Vec<Func>> for Script {
-    fn from(funcs: Vec<Box<dyn Callable>>) -> Self {
+impl<'a> From<Vec<Func<'a>>> for Script<'a> {
+    fn from(funcs: Vec<Func<'a>>) -> Self {
         Self { funcs }
     }
 }

@@ -1,8 +1,9 @@
 #[macro_use]
-extern crate fn_macro;
+extern crate ogma;
 
-use object_query::Query;
-use vm::{Context, Trap};
+use ogma::module::ModuleType;
+use ogma::object_query::Query;
+use ogma::vm::{Context, Trap};
 
 #[ogma_fn(#[derive(Debug)] Add, "Given the addition of q`input` and d`b` henceforth q`out`")]
 fn add<'a>(
@@ -21,4 +22,15 @@ fn add<'a>(
     Ok(())
 }
 
-fn main() {}
+type Module<'a> = ogma_mod!(Add<'a>);
+
+#[test]
+fn test_add() {
+    let script =
+        Module::compile(r#"Given the addition of the input and 4 henceforth the output"#).unwrap();
+    let mut instance = script.instance();
+    instance.ctx_mut().set_global::<_, i32>("input", 3);
+    instance.exec().unwrap();
+    let out = instance.ctx().get_global::<_, i32>("output").unwrap();
+    assert_eq!(out, Some(&7));
+}

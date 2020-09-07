@@ -7,5 +7,6 @@ members = [
   "matcher",
   "fn_macro",
   "vm",
-  "test" # TODO remove me
+  "module",
+  "ogma",
 ]

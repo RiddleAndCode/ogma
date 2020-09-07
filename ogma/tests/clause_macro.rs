@@ -1,7 +1,4 @@
-#[macro_use]
-extern crate clause;
-
-use clause::Token;
+use ogma::clause::{clause, Token};
 
 clause! { const CLAUSE0 = ""; }
 clause! { pub const CLAUSE1 = "the"; }

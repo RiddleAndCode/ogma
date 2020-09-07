@@ -40,9 +40,9 @@ impl<'a> From<Token<'a>> for TokenOwned {
 impl ToTokens for TokenOwned {
     fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
         tokens.extend(match self {
-            TokenOwned::Static(s) => quote! { ::clause::Token::Static(#s) },
-            TokenOwned::QueryVar(s) => quote! { ::clause::Token::QueryVar(#s) },
-            TokenOwned::DataVar(s) => quote! { ::clause::Token::DataVar(#s) },
+            TokenOwned::Static(s) => quote! { ::ogma::clause::Token::Static(#s) },
+            TokenOwned::QueryVar(s) => quote! { ::ogma::clause::Token::QueryVar(#s) },
+            TokenOwned::DataVar(s) => quote! { ::ogma::clause::Token::DataVar(#s) },
         });
     }
 }
@@ -71,7 +71,7 @@ pub fn clause(args: TokenStream) -> TokenStream {
     let ClauseArgs { vis, name, tokens } = parse_macro_input!(args as ClauseArgs);
     let len = tokens.len();
     let out = quote! {
-        #vis const #name: [::clause::Token<'static>; #len] = [#tokens];
+        #vis const #name: [::ogma::clause::Token<'static>; #len] = [#tokens];
     };
     out.into()
 }

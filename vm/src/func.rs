@@ -2,7 +2,7 @@ use crate::context::Context;
 use crate::trap::Trap;
 use alloc::boxed::Box;
 
-pub type Func = Box<dyn Callable>;
+pub type Func<'a> = Box<dyn Callable + 'a>;
 
 pub trait Callable {
     fn call(&self, ctx: &mut Context) -> Result<(), Trap>;

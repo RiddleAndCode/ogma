@@ -1,5 +1,5 @@
 [package]
-name = "test"
+name = "module"
 version = "0.1.0"
 authors = ["Julian Popescu <jpopesculian@gmail.com>"]
 edition = "2018"
@@ -8,9 +8,5 @@ edition = "2018"
 default = []
 
 [dependencies]
-fn-macro = { path = "../fn_macro" }
-clause = { path = "../clause" }
 matcher = { path = "../matcher" }
 vm = { path = "../vm" }
-object-query = { git = "ssh://git@github.com/RiddleAndCode/nlsd.git" }
-

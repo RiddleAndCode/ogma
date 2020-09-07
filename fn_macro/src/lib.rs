@@ -249,7 +249,7 @@ impl ToTokens for StructImpl {
         let func = &self.func;
         tokens.extend(quote! {
             impl #generics #name #generics {
-                ::clause::clause! {
+                ::ogma::clause::clause! {
                     const CLAUSE = #clause
                 }
                 #func
@@ -309,7 +309,7 @@ impl ToTokens for MatchImpl {
             .iter()
             .chain(self.data_vars.iter())
             .map(|var| {
-                quote! { #var: #var.ok_or(::matcher::MatchError::UnfilledVar)?, }
+                quote! { #var: #var.ok_or(::ogma::matcher::MatchError::UnfilledVar)?, }
             });
         let query_var_matches = self.query_vars.iter().map(|var| {
             let var_str = var.to_string();
@@ -320,24 +320,24 @@ impl ToTokens for MatchImpl {
             quote! { #var_str => #var = Some(m.next_data()?), }
         });
         tokens.extend(quote! {
-            impl #impl_generics ::matcher::Match<#lifetime> for #name #struct_generics {
-                fn match_str(s: &#lifetime str) -> Result<Self, ::matcher::MatchError> {
+            impl #impl_generics ::ogma::matcher::Match<#lifetime> for #name #struct_generics {
+                fn match_str(s: &#lifetime str) -> Result<Self, ::ogma::matcher::MatchError> {
                     #(#var_declarations)*
-                    let mut m = ::matcher::Matcher::new(s);
+                    let mut m = ::ogma::matcher::Matcher::new(s);
                     for token in &Self::CLAUSE {
                         match *token {
-                            ::clause::Token::Static(token) => {
+                            ::ogma::clause::Token::Static(token) => {
                                 if m.next_static()? != token {
-                                    return Err(::matcher::MatchError::MismatchedStaticToken);
+                                    return Err(::ogma::matcher::MatchError::MismatchedStaticToken);
                                 }
                             },
-                            ::clause::Token::QueryVar(name) => match name {
+                            ::ogma::clause::Token::QueryVar(name) => match name {
                                 #(#query_var_matches)*
-                                _ => return Err(::matcher::MatchError::UnknownQueryVar),
+                                _ => return Err(::ogma::matcher::MatchError::UnknownQueryVar),
                             },
-                            ::clause::Token::DataVar(name) => match name {
+                            ::ogma::clause::Token::DataVar(name) => match name {
                                 #(#data_var_matches)*
-                                _ => return Err(::matcher::MatchError::UnknownDataVar),
+                                _ => return Err(::ogma::matcher::MatchError::UnknownDataVar),
                             },
                         }
                     }
@@ -382,8 +382,8 @@ impl ToTokens for CallableImpl {
             }
         });
         tokens.extend(quote! {
-            impl #generics ::vm::Callable for #name #generics {
-                fn call(&self, ctx: &mut ::vm::Context) -> Result<(), ::vm::Trap> {
+            impl #generics ::ogma::vm::Callable for #name #generics {
+                fn call(&self, ctx: &mut ::ogma::vm::Context) -> Result<(), ::ogma::vm::Trap> {
                     Self::#fn_name(
                         ctx,
                         #(#fn_args)*
