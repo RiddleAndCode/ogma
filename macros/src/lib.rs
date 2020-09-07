@@ -25,7 +25,40 @@ pub fn clause(args: TokenStream) -> TokenStream {
 pub fn ogma_fn(desc: TokenStream, func: TokenStream) -> TokenStream {
     let desc = parse_macro_input!(desc as fn_macro::Descriptor);
     let func = parse_macro_input!(func as fn_macro::Func);
-    let tokens = match fn_macro::ogma_fn(&desc, &func) {
+    let tokens = match fn_macro::ogma_fn(&desc, &func, None) {
+        Ok(tokens) => tokens,
+        Err(err) => return err.to_compile_error().into(),
+    };
+    tokens.into()
+}
+
+#[proc_macro_attribute]
+pub fn given(desc: TokenStream, func: TokenStream) -> TokenStream {
+    let desc = parse_macro_input!(desc as fn_macro::Descriptor);
+    let func = parse_macro_input!(func as fn_macro::Func);
+    let tokens = match fn_macro::ogma_fn(&desc, &func, Some(fn_macro::Bdd::Given)) {
+        Ok(tokens) => tokens,
+        Err(err) => return err.to_compile_error().into(),
+    };
+    tokens.into()
+}
+
+#[proc_macro_attribute]
+pub fn when(desc: TokenStream, func: TokenStream) -> TokenStream {
+    let desc = parse_macro_input!(desc as fn_macro::Descriptor);
+    let func = parse_macro_input!(func as fn_macro::Func);
+    let tokens = match fn_macro::ogma_fn(&desc, &func, Some(fn_macro::Bdd::When)) {
+        Ok(tokens) => tokens,
+        Err(err) => return err.to_compile_error().into(),
+    };
+    tokens.into()
+}
+
+#[proc_macro_attribute]
+pub fn then(desc: TokenStream, func: TokenStream) -> TokenStream {
+    let desc = parse_macro_input!(desc as fn_macro::Descriptor);
+    let func = parse_macro_input!(func as fn_macro::Func);
+    let tokens = match fn_macro::ogma_fn(&desc, &func, Some(fn_macro::Bdd::Then)) {
         Ok(tokens) => tokens,
         Err(err) => return err.to_compile_error().into(),
     };

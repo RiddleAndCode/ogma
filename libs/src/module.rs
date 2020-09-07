@@ -30,10 +30,9 @@ where
 {
     type Error = MatchError;
     fn compile_line(ctx: &mut C, string: &'a str) -> Result<Box<dyn Callable + 'a>, Self::Error> {
-        if let Ok(matched) = H::match_str(ctx, string) {
-            Ok(Box::new(matched))
-        } else {
-            T::compile_line(ctx, string)
+        match H::match_str(ctx, string) {
+            Ok(matched) => Ok(Box::new(matched)),
+            Err(_) => T::compile_line(ctx, string),
         }
     }
 }

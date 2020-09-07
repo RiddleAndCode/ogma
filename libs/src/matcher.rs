@@ -10,6 +10,7 @@ pub enum MatchError {
     UnknownDataVar,
     UnfilledVar,
     UnexpectedEof,
+    InvalidCtx,
 }
 
 pub struct Matcher<'a> {
