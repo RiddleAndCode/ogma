@@ -1,10 +1,5 @@
-#[macro_use]
-extern crate quote;
-#[macro_use]
-extern crate syn;
-
-use proc_macro::TokenStream;
-use proc_macro2::Span;
+use ogma_libs::clause;
+use proc_macro2::{Span, TokenStream};
 use quote::ToTokens;
 use syn::parse::{Parse, ParseStream};
 use syn::punctuated::Punctuated;
@@ -13,7 +8,7 @@ use syn::{
     LitStr, Pat, Type, Visibility,
 };
 
-struct Descriptor {
+pub struct Descriptor {
     attrs: Vec<Attribute>,
     name: Ident,
     clause_span: Span,
@@ -91,11 +86,11 @@ impl Parse for Descriptor {
     }
 }
 
-struct Func {
+pub struct Func {
     inner: ItemFn,
 }
 
-struct FuncVar {
+pub struct FuncVar {
     name: Ident,
     is_referenced: bool,
     ty: Box<Type>,
@@ -179,7 +174,7 @@ impl Parse for Func {
     }
 }
 
-struct Struct {
+pub struct Struct {
     attrs: Vec<Attribute>,
     name: Ident,
     vis: Visibility,
@@ -188,7 +183,7 @@ struct Struct {
 }
 
 impl Struct {
-    fn build(desc: &Descriptor, func: &Func) -> Result<Self, Error> {
+    pub fn build(desc: &Descriptor, func: &Func) -> Result<Self, Error> {
         Ok(Struct {
             attrs: desc.attrs(),
             name: desc.name(),
@@ -200,7 +195,7 @@ impl Struct {
 }
 
 impl ToTokens for Struct {
-    fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
         let attrs = &self.attrs;
         let vis = &self.vis;
         let name = &self.name;
@@ -219,7 +214,7 @@ impl ToTokens for Struct {
     }
 }
 
-struct StructImpl {
+pub struct StructImpl {
     name: Ident,
     generics: Generics,
     clause: LitStr,
@@ -227,7 +222,7 @@ struct StructImpl {
 }
 
 impl StructImpl {
-    fn build(desc: &Descriptor, func: &Func) -> Self {
+    pub fn build(desc: &Descriptor, func: &Func) -> Self {
         let mut generics = func.generics();
         generics.lifetimes_mut().for_each(|mut l| {
             l.lifetime = Lifetime::new(&format!("'_{}", l.lifetime.ident), Span::call_site());
@@ -242,14 +237,14 @@ impl StructImpl {
 }
 
 impl ToTokens for StructImpl {
-    fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
         let name = &self.name;
         let generics = &self.generics;
         let clause = &self.clause;
         let func = &self.func;
         tokens.extend(quote! {
             impl #generics #name #generics {
-                ::ogma::clause::clause! {
+                ::ogma::clause! {
                     const CLAUSE = #clause
                 }
                 #func
@@ -258,7 +253,7 @@ impl ToTokens for StructImpl {
     }
 }
 
-struct MatchImpl {
+pub struct MatchImpl {
     name: Ident,
     struct_generics: Generics,
     impl_generics: Generics,
@@ -268,7 +263,7 @@ struct MatchImpl {
 }
 
 impl MatchImpl {
-    fn build(desc: &Descriptor, func: &Func) -> Result<Self, Error> {
+    pub fn build(desc: &Descriptor, func: &Func) -> Result<Self, Error> {
         let struct_generics = func.generics();
         let (impl_generics, lifetime) = if struct_generics.lifetimes().count() < 1 {
             let lifetime = Lifetime::new("'a", Span::call_site());
@@ -292,7 +287,7 @@ impl MatchImpl {
 }
 
 impl ToTokens for MatchImpl {
-    fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
         let name = &self.name;
         let struct_generics = &self.struct_generics;
         let impl_generics = &self.impl_generics;
@@ -350,7 +345,7 @@ impl ToTokens for MatchImpl {
     }
 }
 
-struct CallableImpl {
+pub struct CallableImpl {
     name: Ident,
     generics: Generics,
     fn_name: Ident,
@@ -358,7 +353,7 @@ struct CallableImpl {
 }
 
 impl CallableImpl {
-    fn build(desc: &Descriptor, func: &Func) -> Result<Self, Error> {
+    pub fn build(desc: &Descriptor, func: &Func) -> Result<Self, Error> {
         Ok(Self {
             name: desc.name(),
             generics: func.generics(),
@@ -369,7 +364,7 @@ impl CallableImpl {
 }
 
 impl ToTokens for CallableImpl {
-    fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
         let name = &self.name;
         let generics = &self.generics;
         let fn_name = &self.fn_name;
@@ -426,37 +421,16 @@ fn validate(desc: &Descriptor, func: &Func) -> Result<(), Error> {
     Ok(())
 }
 
-#[proc_macro_attribute]
-pub fn ogma_fn(desc: TokenStream, func: TokenStream) -> TokenStream {
-    let desc = parse_macro_input!(desc as Descriptor);
-    let func = parse_macro_input!(func as Func);
-    if let Err(err) = validate(&desc, &func) {
-        return err.to_compile_error().into();
-    }
-    let fn_struct = match Struct::build(&desc, &func) {
-        Ok(fn_struct) => fn_struct,
-        Err(err) => {
-            return err.to_compile_error().into();
-        }
-    };
+pub fn ogma_fn(desc: &Descriptor, func: &Func) -> Result<TokenStream, Error> {
+    validate(&desc, &func)?;
+    let fn_struct = Struct::build(&desc, &func)?;
     let struct_impl = StructImpl::build(&desc, &func);
-    let match_impl = match MatchImpl::build(&desc, &func) {
-        Ok(match_impl) => match_impl,
-        Err(err) => {
-            return err.to_compile_error().into();
-        }
-    };
-    let callable_impl = match CallableImpl::build(&desc, &func) {
-        Ok(callable_impl) => callable_impl,
-        Err(err) => {
-            return err.to_compile_error().into();
-        }
-    };
-    let tokens = quote! {
+    let match_impl = MatchImpl::build(&desc, &func)?;
+    let callable_impl = CallableImpl::build(&desc, &func)?;
+    Ok(quote! {
         #fn_struct
         #struct_impl
         #match_impl
         #callable_impl
-    };
-    tokens.into()
+    })
 }

@@ -1,4 +1,7 @@
-use ogma::clause::{clause, Token};
+#[macro_use]
+extern crate ogma;
+
+use ogma::clause::Token;
 
 clause! { const CLAUSE0 = ""; }
 clause! { pub const CLAUSE1 = "the"; }

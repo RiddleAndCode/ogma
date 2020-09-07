@@ -1,5 +1,5 @@
 [package]
-name = "fn-macro"
+name = "ogma-macros"
 version = "0.1.0"
 authors = ["Julian Popescu <jpopesculian@gmail.com>"]
 edition = "2018"
@@ -14,4 +14,4 @@ default = []
 quote = "1.0"
 proc-macro2 = "1.0"
 syn = { version = "1.0", features = ["full", "extra-traits"] }
-clause = { path = "../clause" }
+ogma-libs = { path = "../libs" }

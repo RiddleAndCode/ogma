@@ -1,12 +1,5 @@
-#[macro_use]
-extern crate quote;
-#[macro_use]
-extern crate syn;
-
-extern crate proc_macro;
-
-use clause_parser::{parse, ParseError, Token};
-use proc_macro::TokenStream;
+use ogma_libs::clause::{parse, ParseError, Token};
+use proc_macro2::TokenStream;
 use quote::ToTokens;
 use syn::parse::{Parse, ParseStream};
 use syn::{
@@ -15,13 +8,13 @@ use syn::{
     Error, Ident, LitStr, Visibility,
 };
 
-struct ClauseArgs {
-    vis: Visibility,
-    name: Ident,
-    tokens: Punctuated<TokenOwned, Comma>,
+pub struct ClauseArgs {
+    pub vis: Visibility,
+    pub name: Ident,
+    pub tokens: Punctuated<TokenOwned, Comma>,
 }
 
-enum TokenOwned {
+pub enum TokenOwned {
     Static(String),
     QueryVar(String),
     DataVar(String),
@@ -38,7 +31,7 @@ impl<'a> From<Token<'a>> for TokenOwned {
 }
 
 impl ToTokens for TokenOwned {
-    fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
         tokens.extend(match self {
             TokenOwned::Static(s) => quote! { ::ogma::clause::Token::Static(#s) },
             TokenOwned::QueryVar(s) => quote! { ::ogma::clause::Token::QueryVar(#s) },
@@ -64,14 +57,4 @@ impl Parse for ClauseArgs {
         let _ = input.parse::<Semi>();
         Ok(ClauseArgs { vis, name, tokens })
     }
-}
-
-#[proc_macro]
-pub fn clause(args: TokenStream) -> TokenStream {
-    let ClauseArgs { vis, name, tokens } = parse_macro_input!(args as ClauseArgs);
-    let len = tokens.len();
-    let out = quote! {
-        #vis const #name: [::ogma::clause::Token<'static>; #len] = [#tokens];
-    };
-    out.into()
 }

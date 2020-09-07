@@ -1,4 +1,4 @@
-use crate::trap::Trap;
+use super::trap::Trap;
 use alloc::boxed::Box;
 use alloc::string::{String, ToString};
 use core::any::{type_name, Any};

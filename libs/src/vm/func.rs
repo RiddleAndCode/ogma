@@ -1,5 +1,5 @@
-use crate::context::Context;
-use crate::trap::Trap;
+use super::context::Context;
+use super::trap::Trap;
 use alloc::boxed::Box;
 
 pub type Func<'a> = Box<dyn Callable + 'a>;

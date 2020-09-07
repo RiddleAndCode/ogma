@@ -8,9 +8,6 @@ edition = "2018"
 default = []
 
 [dependencies]
-fn-macro = { path = "../fn_macro" }
-clause = { path = "../clause" }
-matcher = { path = "../matcher" }
-module = { path = "../module" }
-vm = { path = "../vm" }
+ogma-libs = { path = "../libs" }
+ogma-macros = { path = "../macros" }
 object-query = { git = "ssh://git@github.com/RiddleAndCode/nlsd.git" }

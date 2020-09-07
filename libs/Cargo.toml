@@ -1,5 +1,5 @@
 [package]
-name = "matcher"
+name = "ogma-libs"
 version = "0.1.0"
 authors = ["Julian Popescu <jpopesculian@gmail.com>"]
 edition = "2018"
@@ -13,6 +13,4 @@ nl-parser = { git = "ssh://git@github.com/RiddleAndCode/nlsd.git" }
 nlsd = { git = "ssh://git@github.com/RiddleAndCode/nlsd.git" }
 nloq = { git = "ssh://git@github.com/RiddleAndCode/nlsd.git" }
 object-query = { git = "ssh://git@github.com/RiddleAndCode/nlsd.git" }
-
-[dev-dependencies]
-clause = { path = "../clause" }
+hashbrown = "0.9.0"

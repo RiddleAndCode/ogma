@@ -1,6 +1,6 @@
-use matcher::{Match, MatchError};
+use super::matcher::{Match, MatchError};
+use super::vm::{Callable, Func, Script};
 use std::marker::PhantomData;
-use vm::{Callable, Func, Script};
 
 pub struct Cons<H, T> {
     head: PhantomData<H>,

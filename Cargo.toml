@@ -1,12 +1,7 @@
 [workspace]
 
 members = [
-  "clause",
-  "clause/macro",
-  "clause/parser",
-  "matcher",
-  "fn_macro",
-  "vm",
-  "module",
+  "libs",
+  "macros",
   "ogma",
 ]

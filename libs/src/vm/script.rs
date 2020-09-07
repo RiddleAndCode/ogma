@@ -1,6 +1,6 @@
-use crate::context::Context;
-use crate::func::{Callable, Func};
-use crate::trap::Trap;
+use super::context::Context;
+use super::func::{Callable, Func};
+use super::trap::Trap;
 use alloc::boxed::Box;
 use alloc::vec::Vec;
 
@@ -119,7 +119,7 @@ impl<'a> From<Vec<Func<'a>>> for Script<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::func::tests::Add;
+    use crate::vm::func::tests::Add;
 
     #[test]
     fn exec() {
