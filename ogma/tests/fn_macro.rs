@@ -26,8 +26,12 @@ type Module<'a> = ogma_mod!(Add<'a>);
 
 #[test]
 fn test_add() {
-    let script =
-        Module::compile(r#"Given the addition of the input and 4 henceforth the output"#).unwrap();
+    let mut ctx = ();
+    let script = Module::compile(
+        &mut ctx,
+        r#"Given the addition of the input and 4 henceforth the output"#,
+    )
+    .unwrap();
     let mut instance = script.instance();
     instance.ctx_mut().set_global::<_, i32>("input", 3);
     instance.exec().unwrap();

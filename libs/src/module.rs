@@ -9,39 +9,38 @@ pub struct Cons<H, T> {
 
 pub struct Nil;
 
-pub trait ModuleType<'a> {
+pub trait ModuleType<'a, C> {
     type Error;
-    fn compile_line(string: &'a str) -> Result<Func<'a>, Self::Error>;
-    fn compile(string: &'a str) -> Result<Script<'a>, Self::Error> {
-        string
-            .lines()
-            .map(|s| s.trim())
-            .filter(|s| !s.is_empty())
-            .map(|s| Self::compile_line(s))
-            .collect::<Result<Vec<Func<'a>>, Self::Error>>()
-            .map(|v| v.into())
+    fn compile_line(ctx: &mut C, string: &'a str) -> Result<Func<'a>, Self::Error>;
+    fn compile(ctx: &mut C, string: &'a str) -> Result<Script<'a>, Self::Error> {
+        let mut script = Vec::new();
+        for line in string.lines().map(|s| s.trim()).filter(|s| !s.is_empty()) {
+            let func = Self::compile_line(ctx, line)?;
+            script.push(func);
+        }
+        Ok(script.into())
     }
 }
 
-impl<'a, H, T> ModuleType<'a> for Cons<H, T>
+impl<'a, H, T, C> ModuleType<'a, C> for Cons<H, T>
 where
-    H: 'a + Match<'a> + Callable,
-    T: ModuleType<'a, Error = MatchError>,
-    <T as ModuleType<'a>>::Error: Into<MatchError>,
+    H: 'a + Match<'a, C> + Callable,
+    T: ModuleType<'a, C, Error = MatchError>,
+    <T as ModuleType<'a, C>>::Error: Into<MatchError>,
 {
     type Error = MatchError;
-    fn compile_line(string: &'a str) -> Result<Box<dyn Callable + 'a>, Self::Error> {
-        if let Ok(matched) = H::match_str(string) {
+    fn compile_line(ctx: &mut C, string: &'a str) -> Result<Box<dyn Callable + 'a>, Self::Error> {
+        if let Ok(matched) = H::match_str(ctx, string) {
             Ok(Box::new(matched))
         } else {
-            T::compile_line(string)
+            T::compile_line(ctx, string)
         }
     }
 }
 
-impl<'a> ModuleType<'a> for Nil {
+impl<'a, C> ModuleType<'a, C> for Nil {
     type Error = MatchError;
-    fn compile_line(_: &'a str) -> Result<Box<dyn Callable + 'a>, Self::Error> {
+    fn compile_line(_: &mut C, _: &'a str) -> Result<Box<dyn Callable + 'a>, Self::Error> {
         Err(MatchError::UnexpectedEof)
     }
 }

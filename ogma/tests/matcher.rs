@@ -18,8 +18,8 @@ impl<'a> Add<'a> {
     }
 }
 
-impl<'a> Match<'a> for Add<'a> {
-    fn match_str(string: &'a str) -> Result<Self, MatchError> {
+impl<'a, C> Match<'a, C> for Add<'a> {
+    fn match_str(_: &mut C, string: &'a str) -> Result<Self, MatchError> {
         let mut a = None;
         let mut b = None;
         let mut out = None;
@@ -52,7 +52,11 @@ impl<'a> Match<'a> for Add<'a> {
 
 #[test]
 fn add_match() -> Result<(), MatchError> {
-    let add = Add::match_str("Given the addition of 4 and 3 henceforth the addition")?;
+    let mut ctx = ();
+    let add = Add::match_str(
+        &mut ctx,
+        "Given the addition of 4 and 3 henceforth the addition",
+    )?;
     assert_eq!(
         add,
         Add {

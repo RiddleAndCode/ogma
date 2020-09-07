@@ -5,7 +5,7 @@ use syn::parse::{Parse, ParseStream};
 use syn::punctuated::Punctuated;
 use syn::{
     token, Attribute, Error, FnArg, GenericParam, Generics, Ident, ItemFn, Lifetime, LifetimeDef,
-    LitStr, Pat, Type, Visibility,
+    LitStr, Pat, Type, TypeParam, Visibility,
 };
 
 pub struct Descriptor {
@@ -258,6 +258,7 @@ pub struct MatchImpl {
     struct_generics: Generics,
     impl_generics: Generics,
     lifetime: Lifetime,
+    match_ctx: TypeParam,
     query_vars: Vec<Ident>,
     data_vars: Vec<Ident>,
 }
@@ -265,7 +266,7 @@ pub struct MatchImpl {
 impl MatchImpl {
     pub fn build(desc: &Descriptor, func: &Func) -> Result<Self, Error> {
         let struct_generics = func.generics();
-        let (impl_generics, lifetime) = if struct_generics.lifetimes().count() < 1 {
+        let (mut impl_generics, lifetime) = if struct_generics.lifetimes().count() < 1 {
             let lifetime = Lifetime::new("'a", Span::call_site());
             let param = GenericParam::Lifetime(LifetimeDef::new(lifetime.clone()));
             let mut impl_generics = struct_generics.clone();
@@ -275,11 +276,16 @@ impl MatchImpl {
             let lifetime = struct_generics.lifetimes().next().unwrap().lifetime.clone();
             (struct_generics.clone(), lifetime)
         };
+        let match_ctx = TypeParam::from(Ident::new("MCtx", Span::call_site()));
+        impl_generics
+            .params
+            .push(GenericParam::Type(match_ctx.clone()));
         Ok(Self {
             name: desc.name(),
             lifetime,
             struct_generics,
             impl_generics,
+            match_ctx,
             query_vars: desc.parse_query_var_names()?,
             data_vars: desc.parse_data_var_names()?,
         })
@@ -292,6 +298,7 @@ impl ToTokens for MatchImpl {
         let struct_generics = &self.struct_generics;
         let impl_generics = &self.impl_generics;
         let lifetime = &self.lifetime;
+        let match_ctx = &self.match_ctx;
         let var_declarations = self
             .query_vars
             .iter()
@@ -315,8 +322,8 @@ impl ToTokens for MatchImpl {
             quote! { #var_str => #var = Some(m.next_data()?), }
         });
         tokens.extend(quote! {
-            impl #impl_generics ::ogma::matcher::Match<#lifetime> for #name #struct_generics {
-                fn match_str(s: &#lifetime str) -> Result<Self, ::ogma::matcher::MatchError> {
+            impl #impl_generics ::ogma::matcher::Match<#lifetime, #match_ctx> for #name #struct_generics {
+                fn match_str(ctx: &mut #match_ctx, s: &#lifetime str) -> Result<Self, ::ogma::matcher::MatchError> {
                     #(#var_declarations)*
                     let mut m = ::ogma::matcher::Matcher::new(s);
                     for token in &Self::CLAUSE {
