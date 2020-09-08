@@ -52,7 +52,7 @@ impl<'a, C> ModuleType<'a, C> for Nil {
 
 /// Creates a module from a list of Types
 ///
-/// ```
+/// ```skip
 /// ogma_mod!(A, B, C) // => Cons<A, Cons<B, Cons<C, Nil>>>
 /// ```
 ///
