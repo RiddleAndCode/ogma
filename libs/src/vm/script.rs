@@ -1,31 +1,38 @@
+//! Holds the execution Flow of the virtual machine
+
 use super::context::Context;
 use super::func::{Callable, Func};
 use super::trap::Trap;
 use alloc::boxed::Box;
 use alloc::vec::Vec;
 
+/// A list of Functions
 #[derive(Default)]
 pub struct Script<'a> {
     funcs: Vec<Func<'a>>,
 }
 
+/// The current state of the script instance
 #[derive(Default)]
 pub struct InstanceState {
     ctx: Context,
     pc: usize,
 }
 
+/// A executable reference to a Script with an internal state
 pub struct Instance<'s, 'a> {
     script: &'s Script<'a>,
     state: InstanceState,
 }
 
 impl<'a> Script<'a> {
+    /// Create a new empty Script
     #[inline]
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// Create an instance of a Script
     #[inline]
     pub fn instance(&self) -> Instance {
         Instance {
@@ -34,6 +41,7 @@ impl<'a> Script<'a> {
         }
     }
 
+    /// Add a new function to the end of the Script
     #[inline]
     pub fn push(&mut self, func: impl Callable + 'static) {
         self.funcs.push(Box::new(func));
@@ -41,6 +49,7 @@ impl<'a> Script<'a> {
 }
 
 impl<'s, 'a> Instance<'s, 'a> {
+    /// Step one function down the script
     #[inline]
     pub fn step(&mut self) -> Result<(), Trap> {
         self.cur_func()
@@ -50,6 +59,7 @@ impl<'s, 'a> Instance<'s, 'a> {
         Ok(())
     }
 
+    /// Step through to the end of the script
     #[inline]
     pub fn exec(&mut self) -> Result<(), Trap> {
         loop {
@@ -61,16 +71,19 @@ impl<'s, 'a> Instance<'s, 'a> {
         }
     }
 
+    /// Reset to the intitial state
     #[inline]
     pub fn reset(&mut self) {
         self.state.reset()
     }
 
+    /// Get the instance context
     #[inline]
     pub fn ctx(&self) -> &Context {
         self.state.ctx()
     }
 
+    /// Get a mutable reference to the context
     #[inline]
     pub fn ctx_mut(&mut self) -> &mut Context {
         self.state.ctx_mut()

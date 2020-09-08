@@ -1,16 +1,25 @@
+//! BDD utilities
+
+/// A BDD step
 #[derive(Copy, Clone, Debug)]
 pub enum Step {
+    /// Initial state of the BDD state
     Start,
+    /// Given: Parsing Input
     Given,
+    /// When: Conditional assertions
     When,
+    /// Then: Produce side effects
     Then,
 }
 
 impl Step {
+    /// Initialize BDD Step
     pub fn new() -> Self {
         Step::Start
     }
 
+    /// Get the next BDD Step given a keyword: "Given", "When", "Then" or "And"
     pub fn next(self, keyword: &str) -> Option<Step> {
         match keyword {
             "Given" => match self {

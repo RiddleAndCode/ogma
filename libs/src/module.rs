@@ -1,14 +1,20 @@
+//! Script parsing utilities
+
 use super::matcher::{Match, MatchError};
 use super::vm::{Callable, Func, Script};
 use std::marker::PhantomData;
 
+/// A Type which represents two types H and T
 pub struct Cons<H, T> {
     head: PhantomData<H>,
     tail: PhantomData<T>,
 }
 
+/// A Type which represents the empty Type
 pub struct Nil;
 
+/// Types which implement `ModuleType` can compile a line into a `Func` and multiple lines into a
+/// `Script`
 pub trait ModuleType<'a, C> {
     type Error;
     fn compile_line(ctx: &mut C, string: &'a str) -> Result<Func<'a>, Self::Error>;
@@ -44,6 +50,13 @@ impl<'a, C> ModuleType<'a, C> for Nil {
     }
 }
 
+/// Creates a module from a list of Types
+///
+/// ```
+/// ogma_mod!(A, B, C) // => Cons<A, Cons<B, Cons<C, Nil>>>
+/// ```
+///
+/// If `A`, `B` and `C` implement `Matcher` then `ogma_mod!(A, B, C)` should implement `Matcher`
 #[macro_export]
 macro_rules! ogma_mod {
     () => {

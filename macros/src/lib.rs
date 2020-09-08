@@ -10,6 +10,7 @@ mod fn_macro;
 
 use proc_macro::TokenStream;
 
+/// Parse a clause into a static list of tokens
 #[proc_macro]
 pub fn clause(args: TokenStream) -> TokenStream {
     let clause_macro::ClauseArgs { vis, name, tokens } =
@@ -21,6 +22,7 @@ pub fn clause(args: TokenStream) -> TokenStream {
     out.into()
 }
 
+/// Derive a callable and matchable function structure from a function
 #[proc_macro_attribute]
 pub fn ogma_fn(desc: TokenStream, func: TokenStream) -> TokenStream {
     let desc = parse_macro_input!(desc as fn_macro::Descriptor);
@@ -32,6 +34,7 @@ pub fn ogma_fn(desc: TokenStream, func: TokenStream) -> TokenStream {
     tokens.into()
 }
 
+/// Derive a function structure which matches during the BDD "Given" state
 #[proc_macro_attribute]
 pub fn given(desc: TokenStream, func: TokenStream) -> TokenStream {
     let desc = parse_macro_input!(desc as fn_macro::Descriptor);
@@ -43,6 +46,7 @@ pub fn given(desc: TokenStream, func: TokenStream) -> TokenStream {
     tokens.into()
 }
 
+/// Derive a function structure which matches during the BDD "When" state
 #[proc_macro_attribute]
 pub fn when(desc: TokenStream, func: TokenStream) -> TokenStream {
     let desc = parse_macro_input!(desc as fn_macro::Descriptor);
@@ -54,6 +58,7 @@ pub fn when(desc: TokenStream, func: TokenStream) -> TokenStream {
     tokens.into()
 }
 
+/// Derive a function structure which matches during the BDD "Then" state
 #[proc_macro_attribute]
 pub fn then(desc: TokenStream, func: TokenStream) -> TokenStream {
     let desc = parse_macro_input!(desc as fn_macro::Descriptor);

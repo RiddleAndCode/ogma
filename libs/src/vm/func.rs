@@ -1,9 +1,13 @@
+//! The callable code units of a script in the Virtual Machine
+
 use super::context::Context;
 use super::trap::Trap;
 use alloc::boxed::Box;
 
+/// A Callable Type
 pub type Func<'a> = Box<dyn Callable + 'a>;
 
+/// Given a Context can call itself and modify the Context
 pub trait Callable {
     fn call(&self, ctx: &mut Context) -> Result<(), Trap>;
 }

@@ -1,19 +1,29 @@
+//! Clause parsing utilities
+
 use core::fmt;
 
+/// A token parsed from a clause string
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Token<'a> {
+    /// A static one word token
     Static(&'a str),
+    /// A query variable
     QueryVar(&'a str),
+    /// A data variable
     DataVar(&'a str),
 }
 
+/// An error which may occur during parsing
 #[derive(Debug)]
 pub enum ParseError {
+    /// Variable name is invalid
     InvalidVariableName,
+    /// Prefix is invalid. May only be `q` or `d`
     InvalidVariablePrefix,
 }
 
 impl<'a> Token<'a> {
+    /// Is the token a static token
     pub fn is_static(&self) -> bool {
         match self {
             Self::Static(_) => true,
@@ -21,6 +31,7 @@ impl<'a> Token<'a> {
         }
     }
 
+    /// Is the token a query variable
     pub fn is_query_var(&self) -> bool {
         match self {
             Self::QueryVar(_) => true,
@@ -28,6 +39,7 @@ impl<'a> Token<'a> {
         }
     }
 
+    /// Is the token a data variable
     pub fn is_data_var(&self) -> bool {
         match self {
             Self::DataVar(_) => true,
@@ -61,11 +73,13 @@ fn parse_next(src: &str) -> Result<Option<(Token, &str)>, ParseError> {
     }
 }
 
+/// A parser for a clause. Iterates over tokens
 pub struct Parser<'a> {
     src: &'a str,
 }
 
 impl<'a> Parser<'a> {
+    /// Create a new Parser for a string
     #[inline]
     pub fn new(src: &'a str) -> Self {
         Self { src }
@@ -95,6 +109,7 @@ impl fmt::Display for ParseError {
     }
 }
 
+/// Parse a string into tokens
 #[inline]
 pub fn parse<'a>(string: &'a str) -> impl Iterator<Item = Result<Token<'a>, ParseError>> {
     Parser::new(string)
