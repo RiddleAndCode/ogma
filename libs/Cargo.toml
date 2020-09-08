@@ -9,8 +9,8 @@ default = []
 
 [dependencies]
 serde = "1.0"
-nl-parser = { git = "ssh://git@github.com/RiddleAndCode/nlsd.git" }
-nlsd = { git = "ssh://git@github.com/RiddleAndCode/nlsd.git" }
-nloq = { git = "ssh://git@github.com/RiddleAndCode/nlsd.git" }
-object-query = { git = "ssh://git@github.com/RiddleAndCode/nlsd.git" }
+nl-parser = { version = "0.1" }
+nlsd = { version = "0.1" }
+nloq = { version = "0.1" }
+object-query = { version = "0.1" }
 hashbrown = "0.9.0"

@@ -14,4 +14,4 @@ default = []
 quote = "1.0"
 proc-macro2 = "1.0"
 syn = { version = "1.0", features = ["full", "extra-traits"] }
-ogma-libs = { path = "../libs" }
+ogma-libs = { version = "0.1", path = "../libs" }

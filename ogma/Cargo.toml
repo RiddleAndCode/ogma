@@ -8,6 +8,6 @@ edition = "2018"
 default = []
 
 [dependencies]
-ogma-libs = { path = "../libs" }
-ogma-macros = { path = "../macros" }
-object-query = { git = "ssh://git@github.com/RiddleAndCode/nlsd.git" }
+ogma-libs = { version = "0.1", path = "../libs" }
+ogma-macros = { version = "0.1", path = "../macros" }
+object-query = { version = "0.1" }
