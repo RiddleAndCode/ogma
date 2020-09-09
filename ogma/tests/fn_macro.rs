@@ -22,7 +22,7 @@ fn add<'a>(
     Ok(())
 }
 
-type Module<'a> = ogma_mod!(Add<'a>);
+type Module<'a> = module!(Add<'a>);
 
 #[test]
 fn test_add() {

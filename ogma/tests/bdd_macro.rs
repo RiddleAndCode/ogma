@@ -66,7 +66,7 @@ fn noop(_: &mut Context) -> Result<(), Trap> {
     Ok(())
 }
 
-type Module<'a> = ogma_mod!(Add<'a>, Sub<'a>, Equals<'a>, Noop);
+type Module<'a> = module!(Add<'a>, Sub<'a>, Equals<'a>, Noop);
 
 #[test]
 fn test_given_add() {

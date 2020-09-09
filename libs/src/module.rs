@@ -53,12 +53,12 @@ impl<'a, C> ModuleType<'a, C> for Nil {
 /// Creates a module from a list of Types
 ///
 /// ```skip
-/// ogma_mod!(A, B, C) // => Cons<A, Cons<B, Cons<C, Nil>>>
+/// ogma::module!(A, B, C) // => Cons<A, Cons<B, Cons<C, Nil>>>
 /// ```
 ///
 /// If `A`, `B` and `C` implement `Matcher` then `ogma_mod!(A, B, C)` should implement `Matcher`
 #[macro_export]
-macro_rules! ogma_mod {
+macro_rules! module {
     () => {
         ::ogma::module::Nil
     };
@@ -66,6 +66,6 @@ macro_rules! ogma_mod {
         ::ogma::module::Cons<$head, ::ogma::module::Nil>
     };
     ($head:ty, $($tail:ty),*) => {
-        ::ogma::module::Cons<$head, ogma_mod!($($tail),*)>
+        ::ogma::module::Cons<$head, ::ogma::module!($($tail),*)>
     }
 }
