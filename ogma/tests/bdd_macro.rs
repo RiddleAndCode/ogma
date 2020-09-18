@@ -84,6 +84,16 @@ fn test_given_add() {
 }
 
 #[test]
+fn test_given_add_extra_fail() {
+    let mut ctx = bdd::Step::new();
+    assert!(Module::compile(
+        &mut ctx,
+        r#"Given the addition of the input and 4 henceforth the output extra"#,
+    )
+    .is_err());
+}
+
+#[test]
 fn test_bdd() {
     let mut ctx = bdd::Step::new();
     let script = Module::compile(

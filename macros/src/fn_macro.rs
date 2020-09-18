@@ -378,9 +378,13 @@ impl ToTokens for MatchImpl {
                             },
                         }
                     }
-                    Ok(#name {
-                        #(#var_assignments)*
-                    })
+                    if m.is_empty() {
+                        Ok(#name {
+                            #(#var_assignments)*
+                        })
+                    } else {
+                        Err(::ogma::matcher::MatchError::ExpectedEof)
+                    }
                 }
             }
         });

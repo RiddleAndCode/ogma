@@ -18,8 +18,10 @@ pub enum MatchError {
     UnknownDataVar,
     /// Var left empty
     UnfilledVar,
-    /// Expected more tokens
+    /// Expected more tokens to match against
     UnexpectedEof,
+    /// Matching has finished but there is still more string
+    ExpectedEof,
     /// Invalid matching context
     InvalidCtx,
 }
@@ -66,6 +68,11 @@ impl<'a> Matcher<'a> {
         let out = T::deserialize(&mut nlsd_de)?;
         self.src = nlsd_de.rest();
         Ok(out)
+    }
+
+    /// Check if the matcher contains more tokens
+    pub fn is_empty(&self) -> bool {
+        self.src.trim_start().is_empty()
     }
 }
 
