@@ -1,5 +1,6 @@
 //! Function matching utilities
 
+use crate::vm::{Callable, Func};
 use object_query::Query;
 use serde::Deserialize;
 
@@ -81,6 +82,18 @@ impl<'a> Matcher<'a> {
 pub trait Match<'a, C>: Sized {
     fn match_str(ctx: &mut C, string: &'a str) -> Result<Self, MatchError>;
 }
+
+/// A function pointer which matches a string given a context to a callable Func
+pub type FuncMatcher<'a, C> = fn(&mut C, &'a str) -> Result<Func<'a>, MatchError>;
+
+/// Auto implemented trait for types which both implement `Match` and `Callable`
+pub trait MatchFunc<'a, C>: 'a + Match<'a, C> + Callable {
+    fn match_func(ctx: &mut C, string: &'a str) -> Result<Func<'a>, MatchError> {
+        Self::match_str(ctx, string).map(|this| Box::new(this) as Box<dyn Callable>)
+    }
+}
+
+impl<'a, C, T> MatchFunc<'a, C> for T where T: 'a + Match<'a, C> + Callable {}
 
 impl From<nlsd::Error> for MatchError {
     fn from(err: nlsd::Error) -> Self {

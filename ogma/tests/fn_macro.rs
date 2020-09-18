@@ -22,7 +22,7 @@ fn add<'a>(
     Ok(())
 }
 
-type Module<'a> = module!(Add<'a>);
+type Module<'a> = mod_type!(Add<'a>);
 
 #[test]
 fn test_add() {
