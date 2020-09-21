@@ -1,4 +1,5 @@
 use alloc::string::String;
+use core::fmt;
 
 /// An error which may occur during running a function
 #[derive(Debug)]
@@ -19,3 +20,21 @@ impl Trap {
         Trap::Runtime(err.to_string())
     }
 }
+
+impl fmt::Display for Trap {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::DowncastError(ty_name) => {
+                f.write_fmt(format_args!("could not convert to type: {}", ty_name))
+            }
+            Self::ScriptOutOfBounds => f.write_str("script out of bounds"),
+            Self::MissingGlobal(global_name) => f.write_fmt(format_args!(
+                "could not find global variable: {}",
+                global_name
+            )),
+            Self::Runtime(err) => f.write_str(err),
+        }
+    }
+}
+
+impl std::error::Error for Trap {}
