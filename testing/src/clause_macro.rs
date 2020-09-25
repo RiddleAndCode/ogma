@@ -1,6 +1,3 @@
-#[macro_use]
-extern crate ogma;
-
 use ogma::clause::Token;
 
 clause! { const CLAUSE0 = ""; }

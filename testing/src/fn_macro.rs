@@ -1,6 +1,5 @@
-#[macro_use]
-extern crate ogma;
-
+use alloc::string::ToString;
+use alloc::vec::Vec;
 use ogma::module::ModuleType;
 use ogma::object_query::Query;
 use ogma::vm::{Context, Trap};

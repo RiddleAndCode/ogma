@@ -1,6 +1,5 @@
-#[macro_use]
-extern crate ogma;
-
+use alloc::string::ToString;
+use alloc::vec::Vec;
 use ogma::bdd;
 use ogma::module::{Module as ModuleTrait, ModuleList, ModuleType};
 use ogma::object_query::Query;

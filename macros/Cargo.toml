@@ -10,10 +10,11 @@ description = "Ogma DSL builder libs"
 proc-macro = true
 
 [features]
-default = []
+default = ["std"]
+std = ["ogma-libs/std"]
 
 [dependencies]
 quote = "1.0"
 proc-macro2 = "1.0"
 syn = { version = "1.0", features = ["full", "extra-traits"] }
-ogma-libs = { version = "0.1.5", path = "../libs" }
+ogma-libs = { version = "0.1.5", path = "../libs", default-features = false }

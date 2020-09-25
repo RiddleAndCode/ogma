@@ -1,0 +1,12 @@
+[package]
+name = "ogma-testing"
+version = "0.1.0"
+authors = ["Julian Popescu <jpopesculian@gmail.com>"]
+edition = "2018"
+
+[features]
+default = ["std"]
+std = ["ogma/std"]
+
+[dependencies]
+ogma = { path = "../ogma", default-features = false }
