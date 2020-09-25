@@ -1,6 +1,6 @@
-#[macro_use]
-extern crate ogma;
-
+use crate::error::Fallible;
+use alloc::string::ToString;
+use alloc::vec::Vec;
 use ogma::bdd;
 use ogma::module::{Module as ModuleTrait, ModuleList, ModuleType};
 use ogma::object_query::Query;
@@ -72,8 +72,9 @@ fn module<'a>() -> ModuleList<'a, bdd::Step> {
     mod_list!(bdd::Step => Add, Sub, Equals, Noop)
 }
 
-#[test]
-fn test_given_add() {
+#[cfg_attr(feature = "std", test)]
+#[cfg_attr(not(feature = "std"), test_case)]
+fn test_given_add() -> Fallible<()> {
     let mut ctx = bdd::Step::new();
     let script = Module::compile(
         &mut ctx,
@@ -85,20 +86,24 @@ fn test_given_add() {
     instance.exec().unwrap();
     let out = instance.ctx().get_global::<_, i32>("output").unwrap();
     assert_eq!(out, Some(&7));
+    Ok(())
 }
 
-#[test]
-fn test_given_add_extra_fail() {
+#[cfg_attr(feature = "std", test)]
+#[cfg_attr(not(feature = "std"), test_case)]
+fn test_given_add_extra_fail() -> Fallible<()> {
     let mut ctx = bdd::Step::new();
     assert!(Module::compile(
         &mut ctx,
         r#"Given the addition of the input and 4 henceforth the output extra"#,
     )
     .is_err());
+    Ok(())
 }
 
-#[test]
-fn test_bdd() {
+#[cfg_attr(feature = "std", test)]
+#[cfg_attr(not(feature = "std"), test_case)]
+fn test_bdd() -> Fallible<()> {
     let mut ctx = bdd::Step::new();
     let script = Module::compile(
         &mut ctx,
@@ -117,10 +122,12 @@ fn test_bdd() {
     assert_eq!(left, Some(&7));
     let right = instance.ctx().get_global::<_, i32>("right").unwrap();
     assert_eq!(right, Some(&7));
+    Ok(())
 }
 
-#[test]
-fn test_mod_list() {
+#[cfg_attr(feature = "std", test)]
+#[cfg_attr(not(feature = "std"), test_case)]
+fn test_mod_list() -> Fallible<()> {
     let mut ctx = bdd::Step::new();
     let script = module()
         .compile(
@@ -140,10 +147,12 @@ fn test_mod_list() {
     assert_eq!(left, Some(&7));
     let right = instance.ctx().get_global::<_, i32>("right").unwrap();
     assert_eq!(right, Some(&7));
+    Ok(())
 }
 
-#[test]
-fn test_mod_err() {
+#[cfg_attr(feature = "std", test)]
+#[cfg_attr(not(feature = "std"), test_case)]
+fn test_mod_err() -> Fallible<()> {
     let mut ctx = bdd::Step::new();
     let (line_num, _) = Module::compile(
         &mut ctx,
@@ -157,10 +166,12 @@ fn test_mod_err() {
     .err()
     .unwrap();
     assert_eq!(line_num, 2);
+    Ok(())
 }
 
-#[test]
-fn test_mod_list_err() {
+#[cfg_attr(feature = "std", test)]
+#[cfg_attr(not(feature = "std"), test_case)]
+fn test_mod_list_err() -> Fallible<()> {
     let mut ctx = bdd::Step::new();
     let (line_num, _) = module()
         .compile(
@@ -176,4 +187,5 @@ fn test_mod_list_err() {
         .err()
         .unwrap();
     assert_eq!(line_num, 4);
+    Ok(())
 }

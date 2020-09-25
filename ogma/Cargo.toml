@@ -13,9 +13,10 @@ keywords = ["natural-language", "parsing", "vm", "DSL"]
 categories = ["parsing"]
 
 [features]
-default = []
+default = ["std"]
+std = ["ogma-libs/std", "ogma-macros/std", "object-query/std"]
 
 [dependencies]
-ogma-libs = { version = "0.1.5", path = "../libs" }
-ogma-macros = { version = "0.1.5", path = "../macros" }
-object-query = { version = "0.1" }
+ogma-libs = { version = "0.1.5", path = "../libs", default-features = false }
+ogma-macros = { version = "0.1.5", path = "../macros", default-features = false }
+object-query = { version = "0.1", default-features = false }

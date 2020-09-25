@@ -2,7 +2,9 @@
 
 use super::matcher::{FuncMatcher, Match, MatchError};
 use super::vm::{Callable, Func, Script};
-use std::marker::PhantomData;
+use alloc::boxed::Box;
+use alloc::vec::Vec;
+use core::marker::PhantomData;
 
 /// A list of FuncMatchers for a given context. Output of `mod_list!` macro
 pub type ModuleList<'a, C> = Box<[FuncMatcher<'a, C>]>;
@@ -120,12 +122,23 @@ macro_rules! mod_type {
 /// ```
 ///
 /// If `A`, `B` and `C` implement `Matcher` and `Callable` then `mod_list!(Ctx => A, B, C)` should implement `Module<'a, Ctx>`
+#[cfg(feature = "std")]
 #[macro_export]
 macro_rules! mod_list {
     () => {
-        Box::new([])
+        ::std::boxed::Box::new([])
     };
     ($ctx:ty => $($item:ty),*) => {
-        Box::new([$(<$item as $crate::matcher::MatchFunc<$ctx>>::match_func),*])
+        ::std::boxed::Box::new([$(<$item as $crate::matcher::MatchFunc<$ctx>>::match_func),*])
+    }
+}
+#[cfg(not(feature = "std"))]
+#[macro_export]
+macro_rules! mod_list {
+    () => {
+        ::alloc::boxed::Box::new([])
+    };
+    ($ctx:ty => $($item:ty),*) => {
+        ::alloc::boxed::Box::new([$(<$item as $crate::matcher::MatchFunc<$ctx>>::match_func),*])
     }
 }
