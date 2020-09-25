@@ -1,3 +1,4 @@
+use crate::error::Fallible;
 use alloc::string::ToString;
 use alloc::vec::Vec;
 use ogma::module::ModuleType;
@@ -23,8 +24,9 @@ fn add<'a>(
 
 type Module<'a> = mod_type!(Add<'a>);
 
-#[test]
-fn test_add() {
+#[cfg_attr(feature = "std", test)]
+#[cfg_attr(not(feature = "std"), test_case)]
+fn test_add() -> Fallible<()> {
     let mut ctx = ();
     let script = Module::compile(
         &mut ctx,
@@ -36,4 +38,5 @@ fn test_add() {
     instance.exec().unwrap();
     let out = instance.ctx().get_global::<_, i32>("output").unwrap();
     assert_eq!(out, Some(&7));
+    Ok(())
 }

@@ -6,7 +6,8 @@ edition = "2018"
 
 [features]
 default = ["std"]
-std = ["ogma/std"]
+std = ["ogma/std", "failure/std"]
 
 [dependencies]
 ogma = { path = "../ogma", default-features = false }
+failure = { version = "0.1", default-features = false }

@@ -1,3 +1,4 @@
+use crate::error::Fallible;
 use alloc::vec::Vec;
 use ogma::bdd;
 use ogma::clause::Token;
@@ -59,8 +60,9 @@ impl<'a> Match<'a, bdd::Step> for Add<'a> {
     }
 }
 
-#[test]
-fn bdd_add_match() -> Result<(), MatchError> {
+#[cfg_attr(feature = "std", test)]
+#[cfg_attr(not(feature = "std"), test_case)]
+fn bdd_add_match() -> Fallible<()> {
     let mut ctx = bdd::Step::new();
     let add = Add::match_str(
         &mut ctx,

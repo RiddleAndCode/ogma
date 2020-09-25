@@ -3,6 +3,7 @@
 use crate::vm::{Callable, Func};
 use alloc::boxed::Box;
 use alloc::vec::Vec;
+use core::fmt;
 use object_query::Query;
 use serde::Deserialize;
 
@@ -102,3 +103,22 @@ impl From<nlsd::Error> for MatchError {
         Self::Nlsd(err)
     }
 }
+
+impl fmt::Display for MatchError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Nlsd(err) => f.write_fmt(format_args!("NLSD err: {}", err)),
+            Self::MismatchedStaticToken => f.write_str("mismatched static token"),
+            Self::EmptyQuery => f.write_str("empty NLOQ query"),
+            Self::UnknownQueryVar => f.write_str("mismatched query variable name"),
+            Self::UnknownDataVar => f.write_str("mismatched data variable name"),
+            Self::UnfilledVar => f.write_str("variable not set"),
+            Self::UnexpectedEof => f.write_str("unexpected end of file"),
+            Self::ExpectedEof => f.write_str("clause has extra tokens"),
+            Self::InvalidCtx => f.write_str("context error when parsing"),
+        }
+    }
+}
+
+#[cfg(feature = "std")]
+impl std::error::Error for MatchError {}

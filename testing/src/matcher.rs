@@ -1,3 +1,4 @@
+use crate::error::Fallible;
 use alloc::vec::Vec;
 use ogma::clause::Token;
 use ogma::matcher::*;
@@ -48,8 +49,9 @@ impl<'a, C> Match<'a, C> for Add<'a> {
     }
 }
 
-#[test]
-fn add_match() -> Result<(), MatchError> {
+#[cfg_attr(feature = "std", test)]
+#[cfg_attr(not(feature = "std"), test_case)]
+fn add_match() -> Fallible<()> {
     let mut ctx = ();
     let add = Add::match_str(
         &mut ctx,
