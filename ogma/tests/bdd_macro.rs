@@ -141,3 +141,39 @@ fn test_mod_list() {
     let right = instance.ctx().get_global::<_, i32>("right").unwrap();
     assert_eq!(right, Some(&7));
 }
+
+#[test]
+fn test_mod_err() {
+    let mut ctx = bdd::Step::new();
+    let (line_num, _) = Module::compile(
+        &mut ctx,
+        r#"
+        Given the addition of the input and 4 henceforth the left
+        And the ERROR of the input and -4 henceforth the right
+        When the left is equal to the right
+        Then do nothing
+        "#,
+    )
+    .err()
+    .unwrap();
+    assert_eq!(line_num, 2);
+}
+
+#[test]
+fn test_mod_list_err() {
+    let mut ctx = bdd::Step::new();
+    let (line_num, _) = module()
+        .compile(
+            &mut ctx,
+            r#"
+        Given the addition of the input and 4 henceforth the left
+        And the difference of the input and -4 henceforth the right
+
+        When the left is ERROR to the right
+        Then do nothing
+        "#,
+        )
+        .err()
+        .unwrap();
+    assert_eq!(line_num, 4);
+}

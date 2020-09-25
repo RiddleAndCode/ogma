@@ -21,10 +21,15 @@ pub struct Nil;
 pub trait ModuleType<'a, C> {
     type Error;
     fn compile_line(ctx: &mut C, string: &'a str) -> Result<Func<'a>, Self::Error>;
-    fn compile(ctx: &mut C, string: &'a str) -> Result<Script<'a>, Self::Error> {
+    fn compile(ctx: &mut C, string: &'a str) -> Result<Script<'a>, (usize, Self::Error)> {
         let mut script = Vec::new();
-        for line in string.lines().map(|s| s.trim()).filter(|s| !s.is_empty()) {
-            let func = Self::compile_line(ctx, line)?;
+        for (line_num, line) in string
+            .lines()
+            .enumerate()
+            .map(|(i, s)| (i, s.trim()))
+            .filter(|(_, s)| !s.is_empty())
+        {
+            let func = Self::compile_line(ctx, line).map_err(|e| (line_num, e))?;
             script.push(func);
         }
         Ok(script.into())
@@ -36,10 +41,15 @@ pub trait ModuleType<'a, C> {
 pub trait Module<'a, C> {
     type Error;
     fn compile_line(&self, ctx: &mut C, string: &'a str) -> Result<Func<'a>, Self::Error>;
-    fn compile(&self, ctx: &mut C, string: &'a str) -> Result<Script<'a>, Self::Error> {
+    fn compile(&self, ctx: &mut C, string: &'a str) -> Result<Script<'a>, (usize, Self::Error)> {
         let mut script = Vec::new();
-        for line in string.lines().map(|s| s.trim()).filter(|s| !s.is_empty()) {
-            let func = self.compile_line(ctx, line)?;
+        for (line_num, line) in string
+            .lines()
+            .enumerate()
+            .map(|(i, s)| (i, s.trim()))
+            .filter(|(_, s)| !s.is_empty())
+        {
+            let func = self.compile_line(ctx, line).map_err(|e| (line_num, e))?;
             script.push(func);
         }
         Ok(script.into())

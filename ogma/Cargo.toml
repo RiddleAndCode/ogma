@@ -1,6 +1,6 @@
 [package]
 name = "ogma"
-version = "0.1.4"
+version = "0.1.5"
 authors = ["Julian Popescu <jpopesculian@gmail.com>"]
 edition = "2018"
 license = "MIT OR Apache-2.0"
@@ -16,6 +16,6 @@ categories = ["parsing"]
 default = []
 
 [dependencies]
-ogma-libs = { version = "0.1.4", path = "../libs" }
-ogma-macros = { version = "0.1.4", path = "../macros" }
+ogma-libs = { version = "0.1.5", path = "../libs" }
+ogma-macros = { version = "0.1.5", path = "../macros" }
 object-query = { version = "0.1" }
