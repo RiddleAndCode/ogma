@@ -118,6 +118,8 @@ pub fn parse<'a>(string: &'a str) -> impl Iterator<Item = Result<Token<'a>, Pars
 #[cfg(test)]
 mod tests {
     use super::*;
+    use alloc::vec;
+    use alloc::vec::Vec;
 
     #[test]
     fn test_parse_next() -> Result<(), ParseError> {

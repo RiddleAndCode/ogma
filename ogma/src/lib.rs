@@ -39,6 +39,10 @@
 //!    instance.ctx_mut().set_global::<_, i32>("input", 2);
 //!    assert!(instance.exec().is_ok());
 //! ```
+#![cfg_attr(not(feature = "std"), no_std)]
+
+#[cfg(feature = "std")]
+extern crate std as core;
 
 pub extern crate object_query;
 

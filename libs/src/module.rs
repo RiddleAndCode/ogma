@@ -2,7 +2,9 @@
 
 use super::matcher::{FuncMatcher, Match, MatchError};
 use super::vm::{Callable, Func, Script};
-use std::marker::PhantomData;
+use alloc::boxed::Box;
+use alloc::vec::Vec;
+use core::marker::PhantomData;
 
 /// A list of FuncMatchers for a given context. Output of `mod_list!` macro
 pub type ModuleList<'a, C> = Box<[FuncMatcher<'a, C>]>;
@@ -21,10 +23,15 @@ pub struct Nil;
 pub trait ModuleType<'a, C> {
     type Error;
     fn compile_line(ctx: &mut C, string: &'a str) -> Result<Func<'a>, Self::Error>;
-    fn compile(ctx: &mut C, string: &'a str) -> Result<Script<'a>, Self::Error> {
+    fn compile(ctx: &mut C, string: &'a str) -> Result<Script<'a>, (usize, Self::Error)> {
         let mut script = Vec::new();
-        for line in string.lines().map(|s| s.trim()).filter(|s| !s.is_empty()) {
-            let func = Self::compile_line(ctx, line)?;
+        for (line_num, line) in string
+            .lines()
+            .enumerate()
+            .map(|(i, s)| (i, s.trim()))
+            .filter(|(_, s)| !s.is_empty())
+        {
+            let func = Self::compile_line(ctx, line).map_err(|e| (line_num, e))?;
             script.push(func);
         }
         Ok(script.into())
@@ -36,10 +43,15 @@ pub trait ModuleType<'a, C> {
 pub trait Module<'a, C> {
     type Error;
     fn compile_line(&self, ctx: &mut C, string: &'a str) -> Result<Func<'a>, Self::Error>;
-    fn compile(&self, ctx: &mut C, string: &'a str) -> Result<Script<'a>, Self::Error> {
+    fn compile(&self, ctx: &mut C, string: &'a str) -> Result<Script<'a>, (usize, Self::Error)> {
         let mut script = Vec::new();
-        for line in string.lines().map(|s| s.trim()).filter(|s| !s.is_empty()) {
-            let func = self.compile_line(ctx, line)?;
+        for (line_num, line) in string
+            .lines()
+            .enumerate()
+            .map(|(i, s)| (i, s.trim()))
+            .filter(|(_, s)| !s.is_empty())
+        {
+            let func = self.compile_line(ctx, line).map_err(|e| (line_num, e))?;
             script.push(func);
         }
         Ok(script.into())
@@ -110,12 +122,23 @@ macro_rules! mod_type {
 /// ```
 ///
 /// If `A`, `B` and `C` implement `Matcher` and `Callable` then `mod_list!(Ctx => A, B, C)` should implement `Module<'a, Ctx>`
+#[cfg(feature = "std")]
 #[macro_export]
 macro_rules! mod_list {
     () => {
-        Box::new([])
+        ::std::boxed::Box::new([])
     };
     ($ctx:ty => $($item:ty),*) => {
-        Box::new([$(<$item as $crate::matcher::MatchFunc<$ctx>>::match_func),*])
+        ::std::boxed::Box::new([$(<$item as $crate::matcher::MatchFunc<$ctx>>::match_func),*])
+    }
+}
+#[cfg(not(feature = "std"))]
+#[macro_export]
+macro_rules! mod_list {
+    () => {
+        ::alloc::boxed::Box::new([])
+    };
+    ($ctx:ty => $($item:ty),*) => {
+        ::alloc::boxed::Box::new([$(<$item as $crate::matcher::MatchFunc<$ctx>>::match_func),*])
     }
 }

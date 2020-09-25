@@ -1,6 +1,4 @@
-#[macro_use]
-extern crate ogma;
-
+use crate::error::Fallible;
 use ogma::clause::Token;
 
 clause! { const CLAUSE0 = ""; }
@@ -9,28 +7,37 @@ clause! { pub(crate) const CLAUSE2 = "q`query_name`"; }
 clause! { const CLAUSE3 = "d`data_name`"; }
 clause! { const CLAUSE4 = "the q`query_name` and d`data_name` tokens"; }
 
-#[test]
-fn empty() {
+#[cfg_attr(feature = "std", test)]
+#[cfg_attr(not(feature = "std"), test_case)]
+fn empty() -> Fallible<()> {
     assert_eq!(CLAUSE0, []);
+    Ok(())
 }
 
-#[test]
-fn static_token() {
+#[cfg_attr(feature = "std", test)]
+#[cfg_attr(not(feature = "std"), test_case)]
+fn static_token() -> Fallible<()> {
     assert_eq!(CLAUSE1, [Token::Static("the")]);
+    Ok(())
 }
 
-#[test]
-fn query_token() {
+#[cfg_attr(feature = "std", test)]
+#[cfg_attr(not(feature = "std"), test_case)]
+fn query_token() -> Fallible<()> {
     assert_eq!(CLAUSE2, [Token::QueryVar("query_name")]);
+    Ok(())
 }
 
-#[test]
-fn data_token() {
+#[cfg_attr(feature = "std", test)]
+#[cfg_attr(not(feature = "std"), test_case)]
+fn data_token() -> Fallible<()> {
     assert_eq!(CLAUSE3, [Token::DataVar("data_name")]);
+    Ok(())
 }
 
-#[test]
-fn mixed_tokens() {
+#[cfg_attr(feature = "std", test)]
+#[cfg_attr(not(feature = "std"), test_case)]
+fn mixed_tokens() -> Fallible<()> {
     assert_eq!(
         CLAUSE4,
         [
@@ -41,4 +48,5 @@ fn mixed_tokens() {
             Token::Static("tokens")
         ]
     );
+    Ok(())
 }

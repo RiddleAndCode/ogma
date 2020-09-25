@@ -1,4 +1,4 @@
-use alloc::string::String;
+use alloc::string::{String, ToString};
 use core::fmt;
 
 /// An error which may occur during running a function
@@ -37,4 +37,5 @@ impl fmt::Display for Trap {
     }
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for Trap {}
