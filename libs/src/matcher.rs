@@ -1,6 +1,8 @@
 //! Function matching utilities
 
 use crate::vm::{Callable, Func};
+use alloc::boxed::Box;
+use alloc::vec::Vec;
 use object_query::Query;
 use serde::Deserialize;
 

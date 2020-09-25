@@ -2,7 +2,9 @@
 
 use super::matcher::{FuncMatcher, Match, MatchError};
 use super::vm::{Callable, Func, Script};
-use std::marker::PhantomData;
+use alloc::boxed::Box;
+use alloc::vec::Vec;
+use core::marker::PhantomData;
 
 /// A list of FuncMatchers for a given context. Output of `mod_list!` macro
 pub type ModuleList<'a, C> = Box<[FuncMatcher<'a, C>]>;

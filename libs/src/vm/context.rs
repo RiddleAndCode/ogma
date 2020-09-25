@@ -2,15 +2,15 @@
 
 use super::trap::Trap;
 use alloc::boxed::Box;
+use alloc::collections::BTreeMap;
 use alloc::string::{String, ToString};
 use core::any::{type_name, Any};
-use hashbrown::HashMap;
 
 /// Virtual machine context
 #[derive(Default)]
 pub struct Context {
     /// The global variables queryable by name
-    pub globals: HashMap<String, Box<dyn Any>>,
+    pub globals: BTreeMap<String, Box<dyn Any>>,
 }
 
 impl Context {
