@@ -1,6 +1,6 @@
 [package]
 name = "ogma"
-version = "0.1.5"
+version = "0.1.6"
 authors = ["Julian Popescu <jpopesculian@gmail.com>"]
 edition = "2018"
 license = "MIT OR Apache-2.0"
@@ -17,6 +17,6 @@ default = ["std"]
 std = ["ogma-libs/std", "ogma-macros/std", "object-query/std"]
 
 [dependencies]
-ogma-libs = { version = "0.1.5", path = "../libs", default-features = false }
-ogma-macros = { version = "0.1.5", path = "../macros", default-features = false }
+ogma-libs = { version = "0.1.6", path = "../libs", default-features = false }
+ogma-macros = { version = "0.1.6", path = "../macros", default-features = false }
 object-query = { version = "0.1", default-features = false }
