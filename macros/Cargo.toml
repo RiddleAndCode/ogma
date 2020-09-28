@@ -1,6 +1,6 @@
 [package]
 name = "ogma-macros"
-version = "0.1.5"
+version = "0.1.6"
 authors = ["Julian Popescu <jpopesculian@gmail.com>"]
 edition = "2018"
 license = "MIT OR Apache-2.0"
@@ -17,4 +17,4 @@ std = ["ogma-libs/std"]
 quote = "1.0"
 proc-macro2 = "1.0"
 syn = { version = "1.0", features = ["full", "extra-traits"] }
-ogma-libs = { version = "0.1.5", path = "../libs", default-features = false }
+ogma-libs = { version = "0.1.6", path = "../libs", default-features = false }

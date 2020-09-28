@@ -9,7 +9,7 @@ use ogma::vm::{Context, Trap};
 #[given(Add, "the addition of q`input` and d`b` henceforth q`out`")]
 fn add<'a>(
     ctx: &mut Context,
-    input: &Vec<Query<'a>>,
+    input: &Vec<Query<'static>>,
     b: i32,
     out: &Vec<Query<'a>>,
 ) -> Result<(), Trap> {
@@ -28,7 +28,7 @@ fn sub<'a>(
     ctx: &mut Context,
     input: &Vec<Query<'a>>,
     b: i32,
-    out: &Vec<Query<'a>>,
+    out: &Vec<Query<'static>>,
 ) -> Result<(), Trap> {
     let input = input.iter().next().unwrap().as_key().unwrap();
     let out = out.iter().next().unwrap().as_key().unwrap();
@@ -41,10 +41,10 @@ fn sub<'a>(
 }
 
 #[when(Equals, "q`left` is equal to q`right`")]
-fn equals<'a>(
+fn equals(
     ctx: &mut Context,
-    left: &Vec<Query<'a>>,
-    right: &Vec<Query<'a>>,
+    left: &Vec<Query<'static>>,
+    right: &Vec<Query<'static>>,
 ) -> Result<(), Trap> {
     let left = left.iter().next().unwrap().as_key().unwrap();
     let right = right.iter().next().unwrap().as_key().unwrap();
@@ -66,7 +66,7 @@ fn noop(_: &mut Context) -> Result<(), Trap> {
     Ok(())
 }
 
-type Module<'a> = mod_type!(Add<'a>, Sub<'a>, Equals<'a>, Noop);
+type Module<'a> = mod_type!(Add<'a>, Sub<'a>, Equals, Noop);
 
 fn module<'a>() -> ModuleList<'a, bdd::Step> {
     mod_list!(bdd::Step => Add, Sub, Equals, Noop)
