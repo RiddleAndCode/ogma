@@ -96,12 +96,6 @@ pub struct Func {
     inner: ItemFn,
 }
 
-pub struct FuncVar {
-    name: Ident,
-    is_referenced: bool,
-    ty: Box<Type>,
-}
-
 impl Func {
     fn generics(&self) -> Generics {
         self.inner.sig.generics.clone()
@@ -170,6 +164,36 @@ impl Func {
                 }
             })
             .collect()
+    }
+}
+
+#[derive(Clone)]
+pub struct FuncVar {
+    name: Ident,
+    is_referenced: bool,
+    ty: Box<Type>,
+}
+
+impl FuncVar {
+    pub fn is_static_type(&self) -> bool {
+        let mut expecting_lifetime = false;
+        for token in self.ty.to_token_stream() {
+            match token {
+                proc_macro2::TokenTree::Punct(punct) => {
+                    if punct.as_char() == '\'' {
+                        expecting_lifetime = true;
+                    }
+                }
+                proc_macro2::TokenTree::Ident(ident) => {
+                    if expecting_lifetime && ident.to_string() != "static" {
+                        return false;
+                    }
+                    expecting_lifetime = false;
+                }
+                _ => (),
+            }
+        }
+        true
     }
 }
 
@@ -266,8 +290,8 @@ pub struct MatchImpl {
     lifetime: Lifetime,
     match_ctx: Path,
     bdd: Option<Bdd>,
-    query_vars: Vec<Ident>,
-    data_vars: Vec<Ident>,
+    query_vars: Vec<FuncVar>,
+    data_vars: Vec<FuncVar>,
 }
 
 impl MatchImpl {
@@ -292,6 +316,29 @@ impl MatchImpl {
         } else {
             parse_quote!(::ogma::bdd::Step)
         };
+        let func_vars = func.parse_vars()?;
+        let query_vars = desc
+            .parse_query_var_names()?
+            .iter()
+            .map(|ident| {
+                func_vars
+                    .iter()
+                    .find(|var| &var.name == ident)
+                    .cloned()
+                    .ok_or_else(|| Error::new(ident.span(), "could not find ariable in func"))
+            })
+            .collect::<Result<Vec<_>, Error>>()?;
+        let data_vars = desc
+            .parse_data_var_names()?
+            .iter()
+            .map(|ident| {
+                func_vars
+                    .iter()
+                    .find(|var| &var.name == ident)
+                    .cloned()
+                    .ok_or_else(|| Error::new(ident.span(), "could not find ariable in func"))
+            })
+            .collect::<Result<Vec<_>, Error>>()?;
         Ok(Self {
             name: desc.name(),
             lifetime,
@@ -299,8 +346,8 @@ impl MatchImpl {
             impl_generics,
             match_ctx,
             bdd,
-            query_vars: desc.parse_query_var_names()?,
-            data_vars: desc.parse_data_var_names()?,
+            query_vars,
+            data_vars,
         })
     }
 }
@@ -317,22 +364,30 @@ impl ToTokens for MatchImpl {
             .iter()
             .chain(self.data_vars.iter())
             .map(|var| {
-                quote! { let mut #var = None; }
+                let name = &var.name;
+                quote! { let mut #name = None; }
             });
         let var_assignments = self
             .query_vars
             .iter()
             .chain(self.data_vars.iter())
             .map(|var| {
-                quote! { #var: #var.ok_or(::ogma::matcher::MatchError::UnfilledVar)?, }
+                let name = &var.name;
+                quote! { #name: #name.ok_or(::ogma::matcher::MatchError::UnfilledVar)?, }
             });
         let query_var_matches = self.query_vars.iter().map(|var| {
-            let var_str = var.to_string();
-            quote! { #var_str => #var = Some(m.next_query()?), }
+            let name = &var.name;
+            let name_str = name.to_string();
+            if var.is_static_type() {
+                quote! { #name_str => #name = Some(m.next_query_owned()?), }
+            } else {
+                quote! { #name_str => #name = Some(m.next_query()?), }
+            }
         });
         let data_var_matches = self.data_vars.iter().map(|var| {
-            let var_str = var.to_string();
-            quote! { #var_str => #var = Some(m.next_data()?), }
+            let name = &var.name;
+            let name_str = name.to_string();
+            quote! { #name_str => #name = Some(m.next_data()?), }
         });
         let bdd_check = if let Some(ref bdd) = self.bdd {
             let verb = match bdd {

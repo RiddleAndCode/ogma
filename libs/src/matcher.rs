@@ -63,6 +63,15 @@ impl<'a> Matcher<'a> {
         }
     }
 
+    /// Get the next NLOQ query from the string
+    pub fn next_query_owned(&mut self) -> Result<Vec<Query<'static>>, MatchError> {
+        Ok(self
+            .next_query()?
+            .into_iter()
+            .map(|q| q.to_owned())
+            .collect())
+    }
+
     /// Get the next NLSD object from the string and deserialize into `T`
     pub fn next_data<T>(&mut self) -> Result<T, MatchError>
     where
